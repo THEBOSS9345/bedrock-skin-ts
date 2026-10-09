@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- The README's pictures and links work on npm.
+
 ## 0.1.0
 
 The first release: a TypeScript port of bedrock-skin-go v0.2.5, drawing the same pixels.
