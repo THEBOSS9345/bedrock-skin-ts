@@ -3,11 +3,11 @@
 **Render Minecraft Bedrock skins to PNG and GIF, in TypeScript, in the browser or on a server.** 3D bodies, heads and avatars, capes, slim and wide arms, custom geometry, persona skins, armor, elytra and held tools, animations from Blockbench files, and a detector for invisible skins.
 
 <p align="center">
-  <img src="docs/images/body-front.png" width="160" alt="A skin rendered full body, front on">
-  <img src="docs/images/body-iso.png" width="160" alt="The same skin from an angle">
-  <img src="docs/images/avatar.png" width="160" alt="The skin's head as an avatar">
-  <img src="docs/images/walk.gif" width="160" alt="The skin walking">
-  <img src="docs/images/dance.gif" width="160" alt="The skin dancing">
+  <img src="https://raw.githubusercontent.com/THEBOSS9345/bedrock-skin-ts/main/docs/images/body-front.png" width="160" alt="A skin rendered full body, front on">
+  <img src="https://raw.githubusercontent.com/THEBOSS9345/bedrock-skin-ts/main/docs/images/body-iso.png" width="160" alt="The same skin from an angle">
+  <img src="https://raw.githubusercontent.com/THEBOSS9345/bedrock-skin-ts/main/docs/images/avatar.png" width="160" alt="The skin's head as an avatar">
+  <img src="https://raw.githubusercontent.com/THEBOSS9345/bedrock-skin-ts/main/docs/images/walk.gif" width="160" alt="The skin walking">
+  <img src="https://raw.githubusercontent.com/THEBOSS9345/bedrock-skin-ts/main/docs/images/dance.gif" width="160" alt="The skin dancing">
 </p>
 
 Texture in, image out. No GPU, no canvas, no WebGL, no native modules: a small software rasterizer in plain TypeScript, with one small dependency (fflate, for PNG compression). It reads skins the way a Bedrock (MCPE) client sends them, so it drops straight into a proxy, a server, a Discord bot or a web page.
@@ -203,10 +203,10 @@ The library sets no limits of its own - what is too large is your policy. For ar
 
 ## Contributing
 
-Pull requests welcome, and so is using AI to write them - point it at [AGENTS.md](AGENTS.md) first.
+Pull requests welcome, and so is using AI to write them - point it at [AGENTS.md](https://github.com/THEBOSS9345/bedrock-skin-ts/blob/main/AGENTS.md) first.
 
-This package and the Go version are kept identical. A change to how something renders goes into both, and `tools/parity` (a small Go program) regenerates the reference output the tests compare against. Run `npm run check` before opening a PR. See [CONTRIBUTING.md](CONTRIBUTING.md).
+This package and the Go version are kept identical. A change to how something renders goes into both, and `tools/parity` (a small Go program) regenerates the reference output the tests compare against. Run `npm run check` before opening a PR. See [CONTRIBUTING.md](https://github.com/THEBOSS9345/bedrock-skin-ts/blob/main/CONTRIBUTING.md).
 
 ## License
 
-[The Unlicense](LICENSE) - public domain. The bundled `default_geometry.json` is Mojang's vanilla humanoid model, captured from a real client, included for interoperability. The pictures above are rendered by this package from `testdata/bench-skin` (`node tools/images.mjs`).
+[The Unlicense](https://github.com/THEBOSS9345/bedrock-skin-ts/blob/main/LICENSE) - public domain. The bundled `default_geometry.json` is Mojang's vanilla humanoid model, captured from a real client, included for interoperability. The pictures above are rendered by this package from `testdata/bench-skin` (`node tools/images.mjs`).
