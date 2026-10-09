@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.exe
+
+# Local data files are never committed.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
