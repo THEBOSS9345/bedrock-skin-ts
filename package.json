@@ -1,7 +1,6 @@
 {
   "name": "bedrock-skin",
   "version": "0.1.0",
-  "private": true,
   "description": "Render Minecraft Bedrock skins: 3D models, capes, custom geometry, persona skins, Blockbench animations and invisible-skin detection. A TypeScript port of bedrock-skin-go, pixel for pixel.",
   "license": "Unlicense",
   "keywords": [
