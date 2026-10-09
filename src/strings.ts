@@ -39,3 +39,31 @@ export function toLower(s: string): string {
   for (const c of s) out += c === '\u0130' ? 'i' : c.toLowerCase()
   return out
 }
+
+// trimSpace is Go's strings.TrimSpace. JavaScript's trim also takes U+FEFF,
+// and leaves U+0085.
+export function trimSpace(s: string): string {
+  let a = 0
+  let b = s.length
+  while (a < b && isGoSpace(s.charCodeAt(a))) a++
+  while (b > a && isGoSpace(s.charCodeAt(b - 1))) b--
+  return s.slice(a, b)
+}
+
+// isGoSpace is Go's unicode.IsSpace, what bytes.TrimSpace trims: not quite
+// JavaScript's \s, which also takes U+FEFF.
+export function isGoSpace(c: number): boolean {
+  return (
+    (c >= 0x09 && c <= 0x0d) ||
+    c === 0x20 ||
+    c === 0x85 ||
+    c === 0xa0 ||
+    c === 0x1680 ||
+    (c >= 0x2000 && c <= 0x200a) ||
+    c === 0x2028 ||
+    c === 0x2029 ||
+    c === 0x202f ||
+    c === 0x205f ||
+    c === 0x3000
+  )
+}

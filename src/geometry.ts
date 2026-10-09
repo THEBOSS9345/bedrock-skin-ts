@@ -5,7 +5,7 @@ import { SkinError } from './errors'
 import defaultGeometryJSON from './generated/default_geometry'
 import { isObject, JsonObject, JsonSyntaxError, parseJSON, text, type JsonValue } from './json'
 import { Reader, readF64s } from './jsonread'
-import { compareBytes } from './strings'
+import { compareBytes, trimSpace } from './strings'
 
 // Bone is one bone of a model: a named node in the tree, holding cubes. The
 // fields mirror geometry.json.
@@ -249,31 +249,8 @@ export function findLocator(g: Geometry, name: string): [Locator, Bone] | undefi
 // into the client. Both mean "no mesh supplied", not "broken upload": use it
 // to tell those apart before calling parseGeometry.
 export function isEmpty(raw: Uint8Array | string): boolean {
-  const s = text(raw)
-  let a = 0
-  let b = s.length
-  while (a < b && isGoSpace(s.charCodeAt(a))) a++
-  while (b > a && isGoSpace(s.charCodeAt(b - 1))) b--
-  const t = s.slice(a, b)
+  const t = trimSpace(text(raw))
   return t === '' || t === 'null'
-}
-
-// isGoSpace is Go's unicode.IsSpace, what bytes.TrimSpace trims: not quite
-// JavaScript's \s, which also takes U+FEFF.
-function isGoSpace(c: number): boolean {
-  return (
-    (c >= 0x09 && c <= 0x0d) ||
-    c === 0x20 ||
-    c === 0x85 ||
-    c === 0xa0 ||
-    c === 0x1680 ||
-    (c >= 0x2000 && c <= 0x200a) ||
-    c === 0x2028 ||
-    c === 0x2029 ||
-    c === 0x202f ||
-    c === 0x205f ||
-    c === 0x3000
-  )
 }
 
 // complexity is the total bones and cubes across every entry, roughly what

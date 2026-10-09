@@ -275,3 +275,171 @@ export function goInt(f: number): number {
   if (Number.isNaN(f) || f >= 9.223372036854775807e18 || f < -9.223372036854775808e18) return -(2 ** 63)
   return Math.trunc(f)
 }
+
+// exp, log and pow are Go's math.Exp, math.Log and math.Pow, for Molang's
+// math.exp, math.ln and math.pow. As with the trigonometry, JavaScript's
+// own are only required to be close. These are Go's portable versions; on
+// amd64 Go swaps in assembly for Exp and Log (Log's computes the same; Exp's
+// is a different method, and differs again with FMA), so Go is not
+// bit-identical across machines here either.
+
+export function exp(x: number): number {
+  const LN2_HI = 6.93147180369123816490e-1
+  const LN2_LO = 1.90821492927058770002e-10
+  const LOG2E = 1.44269504088896338700e0
+  const OVERFLOW = 7.09782712893383973096e2
+  const UNDERFLOW = -7.45133219101941108420e2
+  const NEAR_ZERO = 1.0 / (1 << 28)
+  if (Number.isNaN(x)) return x
+  if (x > OVERFLOW) return Infinity
+  if (x < UNDERFLOW) return 0
+  if (-NEAR_ZERO < x && x < NEAR_ZERO) return 1 + x
+  let k = 0
+  if (x < 0) k = Math.trunc(LOG2E * x - 0.5)
+  else if (x > 0) k = Math.trunc(LOG2E * x + 0.5)
+  const hi = x - k * LN2_HI
+  const lo = k * LN2_LO
+  return expmulti(hi, lo, k)
+}
+
+function expmulti(hi: number, lo: number, k: number): number {
+  const P1 = 1.66666666666666657415e-1
+  const P2 = -2.77777777770155933842e-3
+  const P3 = 6.61375632143793436117e-5
+  const P4 = -1.65339022054652515390e-6
+  const P5 = 4.13813679705723846039e-8
+  const r = hi - lo
+  const t = r * r
+  const c = r - t * (P1 + t * (P2 + t * (P3 + t * (P4 + t * P5))))
+  const y = 1 - (lo - (r * c) / (2 - c) - hi)
+  return ldexp(y, k)
+}
+
+export function log(x: number): number {
+  const LN2_HI = 6.93147180369123816490e-1
+  const LN2_LO = 1.90821492927058770002e-10
+  const L1 = 6.666666666666735130e-1
+  const L2 = 3.999999999940941908e-1
+  const L3 = 2.857142874366239149e-1
+  const L4 = 2.222219843214978396e-1
+  const L5 = 1.818357216161805012e-1
+  const L6 = 1.531383769920937332e-1
+  const L7 = 1.479819860511658591e-1
+  if (Number.isNaN(x) || x === Infinity) return x
+  if (x < 0) return NaN
+  if (x === 0) return -Infinity
+  let [f1, ki] = frexp(x)
+  if (f1 < Math.SQRT2 / 2) {
+    f1 *= 2
+    ki--
+  }
+  const f = f1 - 1
+  const k = ki
+  const s = f / (2 + f)
+  const s2 = s * s
+  const s4 = s2 * s2
+  const t1 = s2 * (L1 + s4 * (L3 + s4 * (L5 + s4 * L7)))
+  const t2 = s4 * (L2 + s4 * (L4 + s4 * L6))
+  const R = t1 + t2
+  const hfsq = 0.5 * f * f
+  return k * LN2_HI - (hfsq - (s * (hfsq + R) + k * LN2_LO) - f)
+}
+
+function isOddInt(x: number): boolean {
+  if (Math.abs(x) >= 2 ** 53) return false
+  return Number.isInteger(x) && Math.abs(x) % 2 === 1
+}
+
+export function pow(x: number, y: number): number {
+  if (y === 0 || x === 1) return 1
+  if (y === 1) return x
+  if (Number.isNaN(x) || Number.isNaN(y)) return NaN
+  if (x === 0) {
+    if (y < 0) return isNegative(x) && isOddInt(y) ? -Infinity : Infinity
+    if (y > 0) return isNegative(x) && isOddInt(y) ? x : 0
+  } else if (!Number.isFinite(y)) {
+    if (x === -1) return 1
+    return (Math.abs(x) < 1) === (y === Infinity) ? 0 : Infinity
+  } else if (!Number.isFinite(x)) {
+    if (x === -Infinity) return pow(1 / x, -y) // Pow(-0, -y)
+    if (y < 0) return 0
+    if (y > 0) return Infinity
+  } else if (y === 0.5) {
+    return Math.sqrt(x)
+  } else if (y === -0.5) {
+    return 1 / Math.sqrt(x)
+  }
+  let yi = Math.trunc(Math.abs(y))
+  let yf = Math.abs(y) - yi
+  if (yf !== 0 && x < 0) return NaN
+  if (yi >= 2 ** 63) {
+    if (x === -1) return 1
+    return (Math.abs(x) < 1) === (y > 0) ? 0 : Infinity
+  }
+  // ans = a1 * 2**ae (= 1 for now).
+  let a1 = 1.0
+  let ae = 0
+  // ans *= x**yf
+  if (yf !== 0) {
+    if (yf > 0.5) {
+      yf--
+      yi++
+    }
+    a1 = exp(yf * log(x))
+  }
+  // ans *= x**yi, by repeated squaring, keeping the exponent apart.
+  let [x1, xe] = frexp(x)
+  for (let i = BigInt(yi); i !== 0n; i >>= 1n) {
+    if (xe < -(1 << 12) || 1 << 12 < xe) {
+      // Catastrophic overflow: ldexp below sees it.
+      ae += xe
+      break
+    }
+    if ((i & 1n) === 1n) {
+      a1 *= x1
+      ae += xe
+    }
+    x1 *= x1
+    xe <<= 1
+    if (x1 < 0.5) {
+      x1 += x1
+      xe--
+    }
+  }
+  // ans = a1 * 2**ae; if y < 0 { ans = 1 / ans }, the 1/ on a1 alone, as
+  // it is normalized.
+  if (y < 0) {
+    a1 = 1 / a1
+    ae = -ae
+  }
+  return ldexp(a1, ae)
+}
+
+// frexp is Go's math.Frexp: f as a fraction in [0.5, 1) times 2**exp.
+export function frexp(f: number): [number, number] {
+  if (f === 0 || !Number.isFinite(f)) return [f, 0]
+  let e = 0
+  if (Math.abs(f) < 2.2250738585072014e-308) {
+    // Subnormal: normalize first, as Go does.
+    f *= 2 ** 52
+    e = -52
+  }
+  const b = float64Bits(f)
+  e += Number((b >> 52n) & 0x7ffn) - 1022
+  return [float64FromBits((b & ~(0x7ffn << 52n)) | (1022n << 52n)), e]
+}
+
+// ldexp is Go's math.Ldexp: frac * 2**exp, rounded once.
+export function ldexp(frac: number, e: number): number {
+  if (frac === 0 || !Number.isFinite(frac)) return frac
+  const [f, fe] = frexp(frac)
+  e += fe
+  // f is in [0.5, 1): the result is f * 2**e.
+  if (e < -1074) return copysign(0, frac) // underflow, as Go: below -1075 with f's bias
+  if (e > 1024) return frac < 0 ? -Infinity : Infinity
+  if (e < -1021) {
+    // Subnormal: one rounding, in the multiply by 2**-53, as Go.
+    return f * 2 ** (e + 53) * 2 ** -53
+  }
+  return f * 2 ** e
+}
