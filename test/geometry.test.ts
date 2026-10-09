@@ -108,8 +108,8 @@ describe('geometry', () => {
   it('tells no geometry from broken geometry', () => {
     expect(isEmpty('')).toBe(true)
     expect(isEmpty(' null\n')).toBe(true)
-    expect(isEmpty(new TextEncoder().encode(' null'))).toBe(true)
-    expect(isEmpty('﻿null')).toBe(false)
+    expect(isEmpty(new TextEncoder().encode('\u00a0null'))).toBe(true)
+    expect(isEmpty('\ufeffnull')).toBe(false)
     expect(isEmpty('{}')).toBe(false)
     expect(parseGeometry('null')).toEqual([])
     expect(() => parseGeometry('{')).toThrow(SkinError)
@@ -124,7 +124,7 @@ describe('json', () => {
   })
 
   it('has Go grammar', () => {
-    for (const bad of ['{"a":1,}', '[1,]', '01', '.5', '+1', '1.', '// x\n1', '﻿1', 'nul', '"\u0001"', '{"a" 1}']) {
+    for (const bad of ['{"a":1,}', '[1,]', '01', '.5', '+1', '1.', '// x\n1', '\ufeff1', 'nul', '"\u0001"', '{"a" 1}']) {
       expect(() => parseJSON(bad), bad).toThrow()
     }
     expect(parseJSON(' [1e2, -0.5, "\\u00e9\\ud83d\\ude00", "\\ud800x"] ')).toEqual([100, -0.5, 'é😀', '�x'])

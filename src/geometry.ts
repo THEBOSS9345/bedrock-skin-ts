@@ -5,6 +5,7 @@ import { SkinError } from './errors'
 import defaultGeometryJSON from './generated/default_geometry'
 import { isObject, JsonObject, JsonSyntaxError, parseJSON, text, type JsonValue } from './json'
 import { Reader, readF64s } from './jsonread'
+import { compareBytes } from './strings'
 
 // Bone is one bone of a model: a named node in the tree, holding cubes. The
 // fields mirror geometry.json.
@@ -385,9 +386,8 @@ export function parseGeometry(raw: Uint8Array | string): Geometry[] {
     out.push(geometryOf(desc, key, bones))
   }
   // See docs/design-decisions.md#why-legacy-entries-are-sorted in
-  // bedrock-skin-go. Go sorts by byte, which a UTF-16 compare matches for
-  // identifiers in the Basic Multilingual Plane.
-  out.sort((a, b) => (a.identifier < b.identifier ? -1 : a.identifier > b.identifier ? 1 : 0))
+  // bedrock-skin-go.
+  out.sort((a, b) => compareBytes(a.identifier, b.identifier))
   return out
 }
 
