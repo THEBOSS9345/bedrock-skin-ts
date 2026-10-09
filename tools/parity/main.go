@@ -1,12 +1,11 @@
 // Command parity renders reference output with bedrock-skin-go, the
-// library this crate ports, into testdata/parity. The Rust tests in
-// tests/parity.rs check the port against it: the same images, poses,
-// reports and query results.
+// library this package ports, into testdata/parity. The tests in test/
+// check the port against it: the same images, poses, reports and query
+// results.
 //
-// Run it after changing either library:
+// Run it after changing bedrock-skin-go, with Go installed:
 //
 //	cd tools/parity && go run .
-
 package main
 
 import (
@@ -24,7 +23,7 @@ import (
 )
 
 var (
-	out     = flag.String("out", "../../testdata/parity", "where to write the fixtures")
+	out = flag.String("out", "../../testdata/parity", "where to write the fixtures")
 )
 
 func main() {

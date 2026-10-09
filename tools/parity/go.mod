@@ -1,4 +1,4 @@
-module github.com/THEBOSS9345/bedrock-skin-rs/tools/parity
+module github.com/THEBOSS9345/bedrock-skin-ts/tools/parity
 
 go 1.26.5
 

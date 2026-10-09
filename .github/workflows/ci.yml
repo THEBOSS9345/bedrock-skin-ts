@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [20, 22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      # The parity tests compare against the Go version's output, bit for
+      # bit, on every platform and Node version: the port uses Go's maths,
+      # not the engine's.
+      - run: npm run check
+
+  parity:
+    # The fixtures in testdata/parity must be what bedrock-skin-go writes.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: tools/parity/go.sum
+      - name: Regenerate the fixtures
+        working-directory: tools/parity
+        run: go run .
+      - name: Check nothing changed
+        run: git diff --exit-code -- testdata

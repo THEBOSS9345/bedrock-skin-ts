@@ -1,15 +1,22 @@
 {
   "name": "bedrock-skin",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Render Minecraft Bedrock skins: 3D models, capes, custom geometry, persona skins, Blockbench animations and invisible-skin detection. A TypeScript port of bedrock-skin-go, pixel for pixel.",
   "license": "Unlicense",
   "keywords": [
     "minecraft",
     "bedrock",
+    "mcpe",
     "skin",
     "render",
-    "mcpe"
+    "renderer",
+    "avatar",
+    "geometry",
+    "persona",
+    "blockbench",
+    "animation",
+    "molang"
   ],
   "repository": {
     "type": "git",
@@ -33,11 +40,14 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "sideEffects": false,
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsup",
@@ -55,5 +65,9 @@
   },
   "dependencies": {
     "fflate": "^0.8.3"
+  },
+  "homepage": "https://github.com/THEBOSS9345/bedrock-skin-ts#readme",
+  "bugs": {
+    "url": "https://github.com/THEBOSS9345/bedrock-skin-ts/issues"
   }
 }
