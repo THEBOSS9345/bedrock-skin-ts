@@ -84,6 +84,27 @@ export interface Skin {
 // SkinInput is a skin, or just its image.
 export type SkinInput = Skin | ImageInput
 
+// BoneMove is how one bone moves from where the model puts it: rotation in
+// degrees (x tips its top forward), position in model units (16 to a block),
+// scale as a factor (one number for all three axes; 0 hides it).
+export interface BoneMove {
+  rotation?: [number, number, number]
+  position?: [number, number, number]
+  scale?: [number, number, number] | number
+}
+
+// CustomAnimation is an animation written in code: how each bone moves at a
+// time into the loop, by the bone's name (head, body, rightArm, leftArm,
+// rightLeg, leftLeg, or a custom model's own). pose is called once per frame
+// when the animation is set, never while it plays, so it can take its time.
+//
+//   const nod = { duration: 1, pose: (t) => ({ head: { rotation: [Math.sin(t * 2 * Math.PI) * 20, 0, 0] } }) }
+export interface CustomAnimation {
+  // How long one loop is, in seconds.
+  duration: number
+  pose(time: number): Record<string, BoneMove>
+}
+
 // AnimationInput is what moves the model:
 //   - null, '' or 'none': standing still
 //   - 'walk', 'idle', 'wave' or 'sneak' (also 'crouch'): Minecraft's own
@@ -91,7 +112,34 @@ export type SkinInput = Skin | ImageInput
 //     (viewer.animations() lists them)
 //   - { file, name }: one from a Bedrock animation file - what Blockbench
 //     exports - by name, or the file's first
-export type AnimationInput = string | null | { file: JSONInput; name?: string }
+//   - a CustomAnimation: one written in code
+export type AnimationInput = string | null | { file: JSONInput; name?: string } | CustomAnimation
+
+// Background is what is behind the model; the default is transparent, so
+// the page shows through.
+//   - a string: any CSS background - '#202530', 'linear-gradient(...)',
+//     "url(sky.png) center / cover"
+//   - { image }: a picture, covering the viewer
+//   - { panorama }: a wide picture that turns with the camera, a full circle
+//     across its width
+export type Background = string | { image: string; size?: 'cover' | 'contain' } | { panorama: string }
+
+// NameTag is a name floating above the head, as in game: its text, or the
+// text and how it looks. It stays put while the model animates under it.
+// Style it further with CSS: .bsv-nametag, or ::part(nametag) on the
+// element.
+export type NameTag =
+  | string
+  | {
+      text: string
+      // CSS colours and font. Defaults: white on translucent black, in the
+      // page's 'Minecraft' font if it has one, else monospace.
+      color?: string
+      background?: string
+      font?: string
+      // Text size in CSS pixels. Default 14.
+      size?: number
+    }
 
 // Controls are how a person moves the camera. Each can be turned off.
 export interface Controls {
@@ -165,6 +213,14 @@ export interface SkinViewerOptions {
   worker?: WorkerOption
   // What screen readers say the viewer is. Default "Minecraft skin".
   label?: string
+  // What is behind the model. Default transparent.
+  background?: Background | null
+  // A name above the head.
+  nameTag?: NameTag | null
+  // A fixed size, in CSS pixels (or any CSS length). Left out, the viewer
+  // fills the element it is in, sized by your CSS.
+  width?: number | string
+  height?: number | string
 }
 
 export type { RgbaImage, Scale, ItemAdjust }

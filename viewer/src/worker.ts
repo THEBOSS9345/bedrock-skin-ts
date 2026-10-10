@@ -1,8 +1,8 @@
 // The viewer's Web Worker: the engine, off the page's thread. It says it is
 // ready as soon as it starts, so the page knows the worker loaded.
 //
-// A page that makes its own worker (the `worker` option) points it here:
-//   new Worker(new URL('bedrock-skin-viewer/worker', import.meta.url), { type: 'module' })
+// A bundler that handles `new Worker(new URL(...))` bundles this file with
+// the viewer; the single-file build carries it inside as text.
 
 import { handle } from './engine'
 import type { Request } from './protocol'

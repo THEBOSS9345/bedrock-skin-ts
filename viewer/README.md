@@ -15,14 +15,20 @@ The model is drawn by [bedrock-skin](https://www.npmjs.com/package/bedrock-skin)
 
 ## Quick start
 
-**HTML, or any framework** - a custom element:
+**[Try it live](https://theboss9345.github.io/bedrock-skin-ts/)**, with your own skin.
+
+**A plain page, no build step** - one script, from a CDN:
 
 ```html
-<script type="module">
-  import 'bedrock-skin-viewer/element'
-</script>
+<script src="https://cdn.jsdelivr.net/npm/bedrock-skin-viewer"></script>
 
-<bedrock-skin-viewer src="skin.png" animation="walk" auto-rotate></bedrock-skin-viewer>
+<bedrock-skin-viewer src="skin.png" animation="walk" auto-rotate name-tag="Steve"></bedrock-skin-viewer>
+```
+
+**Any framework, with a bundler** - the same custom element:
+
+```js
+import 'bedrock-skin-viewer/element'
 ```
 
 **React:**
@@ -42,7 +48,7 @@ const viewer = new SkinViewer(document.querySelector('#skin'), { skin: 'skin.png
 viewer.setView('back', { duration: 400 })
 ```
 
-All three are the same viewer: everything below works in each.
+All of them are the same viewer: everything below works in each. The docs go further: [Getting started](docs/getting-started.md) for each framework, [Recipes](docs/recipes.md) for common pages, the [API reference](docs/api.md), and [Troubleshooting](docs/troubleshooting.md).
 
 ## The skin
 
@@ -76,7 +82,14 @@ viewer.setSkin({
 
 **Images** can be anything you have: a URL, a `File` or `Blob` (an upload), the file's bytes, an `<img>`, a canvas, an `ImageBitmap` or `ImageData`. PNGs are read exactly as the game reads them; JPEG and WebP work too. **JSON** (models, animation files) can be a URL, its text, its bytes, or the parsed object.
 
-Setting the same skin again does nothing, even as a new object: in React, write it inline.
+Setting the same skin again does nothing, even as a new object: in React, write it inline. To change one part, keep the rest:
+
+```js
+viewer.loadSkin(file)                     // a new skin image, same cape and armor
+viewer.loadCape('cape.png')               // null takes it off
+viewer.loadArmor({ layer1: 'gold_1.png', layer2: 'gold_2.png' })
+viewer.loadItem('right', 'diamond_sword.png')
+```
 
 Minecraft's armor and item textures belong to Mojang, so this package does not ship them: point the viewer at your resource pack's files.
 
@@ -87,6 +100,15 @@ viewer.setAnimation('walk')        // Minecraft's own: walk, idle, wave, sneak
 viewer.setAnimation('dance')       // one of 33 bundled examples: dance, backflip, swim...
 viewer.setAnimation({ file: 'my.animation.json', name: 'animation.player.salute' })  // Blockbench
 viewer.setAnimation(null)          // standing still
+```
+
+Or write one in code - how each bone moves at a time into the loop:
+
+```js
+viewer.animation = {
+  duration: 1.2,
+  pose: (t) => ({ head: { rotation: [Math.sin((t / 1.2) * Math.PI * 2) * 25, 0, 0] } }),   // a nod
+}
 ```
 
 `await viewer.animations()` lists the motions and examples. An animation from a file is read in the browser; a name left out plays the file's first. Not every animation suits every model: one made for another body moves bones this one lacks, and those parts of it do nothing. `viewer.info.missingBones` lists them.
@@ -142,6 +164,9 @@ new SkinViewer(el, {
 | `maxResolution` | `1024` | The largest picture drawn, in pixels square. |
 | `pauseWhenHidden` | `true` | Stops drawing while off screen or in a background tab. |
 | `worker` | `'auto'` | Where drawing happens; see [Workers and bundlers](#workers-and-bundlers). |
+| `background` | transparent | Any CSS background, `{ image }`, or `{ panorama }` that turns with the camera. |
+| `nameTag` | none | A name above the head: a string, or `{ text, color, background, font, size }`. |
+| `width`, `height` | fill the element | A fixed size: pixels, or any CSS length. |
 | `label` | `"Minecraft skin"` | What screen readers say. |
 
 ## Events
@@ -211,11 +236,16 @@ vue({ template: { compilerOptions: { isCustomElement: (tag) => tag === 'bedrock-
 | `controls` | `false`, or which: `"rotate"`, `"rotate zoom keyboard"`. |
 | `paused` | Present to stop the animation. |
 | `speed` | Playback speed. |
+| `background`, `panorama` | Any CSS background; or a panorama's URL, which turns with the camera. |
+| `name-tag` | A name above the head. |
+| `width`, `height` | A fixed size; numbers are pixels. |
 | `label` | What screen readers say. |
 
 For what attributes cannot say, set properties: `el.skin = { armor: ..., rightHand: ... }` (attributes fill in what it leaves out), `el.animation = { file, name }`, and `el.options = { ... }` for any other option. `el.viewer` is the `SkinViewer` inside. It fires `skinload`, `skinerror` and `cameramove` events. `defineSkinViewerElement('my-tag')` defines it under another name.
 
 ## Workers and bundlers
+
+The single-file build (`<script src="https://cdn.jsdelivr.net/npm/bedrock-skin-viewer">`, or `bedrock-skin-viewer/standalone` as a module) carries everything, its worker's code included, and needs no bundler; it is about 73 kB compressed. The package's other entries are for bundlers, and share bedrock-skin with the rest of your code.
 
 Every viewer on a page shares one Web Worker, which this package starts itself with `new Worker(new URL('./worker.js', import.meta.url))` - the form Vite, webpack 5 and Parcel recognise and bundle on their own. It is tested with Vite, in development and in production builds.
 

@@ -3,8 +3,8 @@
 // things such as an <img> made into bitmaps, parsed JSON written out. And
 // keys, so setting the same skin twice does nothing.
 
-import type { WireAnimation, WireHeld, WireImage, WireJSON, WireSkin } from './protocol'
-import type { AnimationInput, HeldInput, ImageInput, JSONInput, Skin, SkinInput } from './types'
+import type { WireAnimation, WireHeld, WireImage, WireJSON, WirePose, WireSkin } from './protocol'
+import type { AnimationInput, CustomAnimation, HeldInput, ImageInput, JSONInput, Skin, SkinInput } from './types'
 
 const baseURL = () => (typeof document !== 'undefined' ? document.baseURI : typeof location !== 'undefined' ? location.href : undefined)
 
@@ -96,9 +96,26 @@ export async function wireSkin(input: SkinInput): Promise<WireSkin> {
   }
 }
 
-export function wireAnimation(a: AnimationInput | undefined): WireAnimation {
+const isCustom = (a: object): a is CustomAnimation => typeof (a as CustomAnimation).pose === 'function'
+
+const triple = (v: [number, number, number] | number | undefined): [number, number, number] | undefined =>
+  v === undefined ? undefined : typeof v === 'number' ? [v, v, v] : [Number(v[0]), Number(v[1]), Number(v[2])]
+
+// wireAnimation is an animation as the engine takes it. One written in code
+// is posed here, a frame at a time at fps: functions cannot go to a worker.
+export function wireAnimation(a: AnimationInput | undefined, fps = 20): WireAnimation {
   if (a === undefined || a === null) return ''
   if (typeof a === 'string') return a
+  if (isCustom(a)) {
+    const duration = Number.isFinite(a.duration) && a.duration > 0 ? a.duration : 1
+    const frames = Math.max(Math.round(duration * fps), 1)
+    const poses: WirePose[] = []
+    for (let i = 0; i < frames; i++) {
+      const p = a.pose(i / fps) ?? {}
+      poses.push(Object.entries(p).map(([bone, m]) => [bone, { rotation: triple(m.rotation), position: triple(m.position), scale: triple(m.scale) }]))
+    }
+    return { poses, duration }
+  }
   return { file: wireJSON(a.file), name: a.name }
 }
 
@@ -123,7 +140,9 @@ export function keyOf(v: unknown): string {
     const proto = Object.getPrototypeOf(x)
     if (proto === Object.prototype || proto === null) {
       // Raw pixels are data: by identity, as reading them all would be slow.
-      if ('width' in x && 'data' in x) return `#${idOf(x)}`
+      // So is anything holding a function (an animation written in code):
+      // two such are the same only if they are one object.
+      if (('width' in x && 'data' in x) || Object.values(x).some((v) => typeof v === 'function')) return `#${idOf(x)}`
       // Its keys in order: the same skin written another way round is the
       // same skin.
       const o = x as Record<string, unknown>

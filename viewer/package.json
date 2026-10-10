@@ -44,7 +44,11 @@
       "types": "./dist/worker.d.ts",
       "default": "./dist/worker.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./standalone": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/bedrock-skin-viewer.esm.min.js"
+    }
   },
   "files": [
     "dist",
@@ -55,7 +59,7 @@
     "./dist/element.js"
   ],
   "scripts": {
-    "build": "tsup && node tools/use-client.mjs",
+    "build": "tsup && node tools/use-client.mjs && node tools/bundle.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
     "check": "npm run typecheck && npm test && npm run build"
@@ -75,11 +79,14 @@
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
     "happy-dom": "^20.14.6",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
-  }
+  },
+  "unpkg": "./dist/bedrock-skin-viewer.min.js",
+  "jsdelivr": "./dist/bedrock-skin-viewer.min.js"
 }

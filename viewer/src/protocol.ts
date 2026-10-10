@@ -38,9 +38,14 @@ export interface WireSkin {
   hideSkin?: boolean
 }
 
-// An animation: none (""), a built-in motion or example by name, or one from
-// a Bedrock animation file.
-export type WireAnimation = string | { file: WireJSON; name?: string }
+// How bones move in one frame of an animation written in code: by bone
+// name, rotation in degrees, position in model units, scale as a factor.
+export type WirePose = [bone: string, move: { rotation?: [number, number, number]; position?: [number, number, number]; scale?: [number, number, number] }][]
+
+// An animation: none (""), a built-in motion or example by name, one from a
+// Bedrock animation file, or one written in code, its frames posed on the
+// page.
+export type WireAnimation = string | { file: WireJSON; name?: string } | { poses: WirePose[]; duration: number }
 
 export interface WireCamera {
   yaw: number
@@ -63,7 +68,8 @@ export interface AnimationInfo {
 
 export type Request = { id: number; viewer: number } & (
   | { op: 'load'; seq: number; skinKey: string; skin: WireSkin; animKey: string; animation: WireAnimation; fps: number }
-  | { op: 'draw'; i: number; size: number; camera: WireCamera }
+  // measure asks where the top of the model is, for a name tag.
+  | { op: 'draw'; i: number; size: number; camera: WireCamera; measure?: boolean }
   | { op: 'png'; i: number; size: number; camera: WireCamera }
   | { op: 'list' }
   | { op: 'drop' }
@@ -73,7 +79,9 @@ export type Response = { id: number } & (
   | { ok: false; error: string }
   | { ok: true; stale: true }
   | { ok: true; info: AnimationInfo }
-  | { ok: true; width: number; height: number; data: Uint8ClampedArray }
+  // top is the topmost drawn pixel's row and the middle of that row's run,
+  // each 0..1 across the picture, when measured and anything was drawn.
+  | { ok: true; width: number; height: number; data: Uint8ClampedArray; top?: { x: number; y: number } }
   | { ok: true; png: Uint8Array }
   | { ok: true; motions: string[]; examples: string[] }
   | { ok: true }

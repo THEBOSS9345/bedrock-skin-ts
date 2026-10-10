@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bedrock-skin-viewer</title>
+    <meta name="description" content="A drop-in 3D viewer for Minecraft Bedrock skins: try it with your own skin." />
+    <!-- The whole viewer: one file, no bundler. -->
+    <script src="bedrock-skin-viewer.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f1218;
+        --panel: #171b23;
+        --line: #262c38;
+        --text: #e6e9ef;
+        --muted: #8b93a3;
+        --accent: #5b9dff;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+      header { padding: 28px 24px 8px; max-width: 1180px; margin: 0 auto; }
+      header h1 { margin: 0; font-size: 28px; }
+      header p { margin: 6px 0 0; color: var(--muted); }
+      header a { color: var(--accent); }
+      main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; padding: 16px 24px 40px; max-width: 1180px; margin: 0 auto; }
+      @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+      #stage { position: relative; height: min(70vh, 640px); min-height: 360px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+      #stage bedrock-skin-viewer { width: 100%; height: 100%; display: block; }
+      #stage bedrock-skin-viewer[data-state="loading"] { opacity: 0.6; transition: opacity 0.2s; }
+      #drop { position: absolute; inset: 0; display: none; place-items: center; background: rgba(91, 157, 255, 0.15); border: 2px dashed var(--accent); border-radius: 14px; font-size: 18px; pointer-events: none; }
+      #stage.dragging #drop { display: grid; }
+      #status { position: absolute; left: 12px; bottom: 10px; color: var(--muted); font-size: 13px; pointer-events: none; }
+      aside { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; align-content: start; }
+      fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+      legend { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      button, select, input[type="text"] { background: #20252f; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font: inherit; }
+      button { cursor: pointer; }
+      button:hover { border-color: var(--accent); }
+      select, input[type="text"] { width: 100%; }
+      label { display: flex; gap: 6px; align-items: center; }
+      input[type="range"] { flex: 1; }
+      pre { margin: 0; background: #0b0e13; border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; font-size: 12.5px; color: #c7d2fe; white-space: pre-wrap; word-break: break-all; }
+      .note { color: var(--muted); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>bedrock-skin-viewer</h1>
+      <p>
+        A drop-in 3D viewer for Minecraft Bedrock skins. Drag to turn, scroll to zoom, or drop your own skin on it.
+        <a href="https://github.com/THEBOSS9345/bedrock-skin-ts/tree/main/viewer">GitHub</a> ·
+        <a href="https://www.npmjs.com/package/bedrock-skin-viewer">npm</a>
+      </p>
+    </header>
+    <main>
+      <div id="stage">
+        <bedrock-skin-viewer id="viewer" src="skin.png" geometry="geometry.json" animation="walk" auto-rotate="20" label="A demo skin"></bedrock-skin-viewer>
+        <div id="drop">Drop a skin PNG</div>
+        <div id="status">Loading…</div>
+      </div>
+      <aside>
+        <fieldset>
+          <legend>Skin</legend>
+          <div class="row">
+            <button id="pick">Your own skin…</button>
+            <input id="file" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+            <button id="sample">The demo skin</button>
+          </div>
+          <div class="row">
+            <label><input type="radio" name="model" value="" checked /> its own model</label>
+            <label><input type="radio" name="model" value="wide" /> wide</label>
+            <label><input type="radio" name="model" value="slim" /> slim</label>
+          </div>
+          <div class="row">
+            <label><input id="armor" type="checkbox" /> armor</label>
+            <label><input id="sword" type="checkbox" /> sword</label>
+            <label><input id="cape" type="checkbox" /> cape</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Animation</legend>
+          <select id="animation" aria-label="Animation"></select>
+          <div class="row">
+            <label>Speed <input id="speed" type="range" min="0.25" max="2" step="0.25" value="1" /></label>
+            <button id="play">Pause</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Camera</legend>
+          <div class="row">
+            <button data-view="front">Front</button>
+            <button data-view="back">Back</button>
+            <button data-view="left">Left</button>
+            <button data-view="right">Right</button>
+            <button data-view="iso">Iso</button>
+            <button id="spin">Stop spinning</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Look</legend>
+          <select id="background" aria-label="Background">
+            <option value="radial-gradient(circle at 50% 35%, #2b3343, #10131a)">Dark</option>
+            <option value="linear-gradient(#8fc7ff, #d9efff 70%, #6db04a 70%)">Sky and grass</option>
+            <option value="panorama">Panorama (turns with the camera)</option>
+            <option value="">Transparent</option>
+          </select>
+          <input id="nametag" type="text" placeholder="Name tag" value="Steve" aria-label="Name tag" />
+        </fieldset>
+        <fieldset>
+          <legend>This viewer, in HTML</legend>
+          <pre id="code"></pre>
+          <div class="row">
+            <button id="snapshot">Save as PNG</button>
+          </div>
+          <p class="note">Armor, the sword, the cape and the panorama here are drawn by this page: Minecraft's own textures belong to Mojang.</p>
+        </fieldset>
+      </aside>
+    </main>
+    <script>
+      const el = document.getElementById('viewer')
+      const $ = (id) => document.getElementById(id)
+
+      // Stand-in textures, drawn here.
+      const paint = (w, h, draw) => {
+        const c = document.createElement('canvas')
+        c.width = w
+        c.height = h
+        draw(c.getContext('2d'))
+        return c
+      }
+      const armorLayer = (tint) =>
+        paint(64, 32, (g) => {
+          g.fillStyle = tint
+          g.fillRect(0, 0, 64, 32)
+          g.fillStyle = 'rgba(255,255,255,0.3)'
+          for (let x = 0; x < 64; x += 4) g.fillRect(x, 0, 1, 32)
+          g.clearRect(40, 26, 16, 6)
+        })
+      const sword = paint(16, 16, (g) => {
+        for (let i = 0; i < 16; i++) {
+          g.fillStyle = i < 4 ? '#7a5230' : '#8fe8ff'
+          g.fillRect(i, 15 - i, 2, 2)
+        }
+      })
+      const cape = paint(64, 32, (g) => {
+        g.fillStyle = '#b3262e'
+        g.fillRect(0, 0, 64, 32)
+        g.fillStyle = '#f2c94c'
+        g.fillRect(4, 4, 6, 6)
+      })
+      const panorama = paint(1024, 256, (g) => {
+        const sky = g.createLinearGradient(0, 0, 0, 256)
+        sky.addColorStop(0, '#6aa8ff')
+        sky.addColorStop(0.7, '#cfe6ff')
+        g.fillStyle = sky
+        g.fillRect(0, 0, 1024, 256)
+        g.fillStyle = '#5a8f3c'
+        for (let x = 0; x < 1024; x += 64) g.fillRect(x, 150 + ((x * 37) % 40), 64, 120)
+        g.fillStyle = '#3e6b2a'
+        for (let x = 32; x < 1024; x += 128) g.fillRect(x, 120, 24, 60)
+      }).toDataURL()
+
+      const state = { texture: 'skin.png', geometry: 'geometry.json', model: '', armor: false, sword: false, cape: false }
+      const apply = () => {
+        el.skin = {
+          texture: state.texture,
+          geometry: state.geometry || undefined,
+          model: state.model || undefined,
+          armor: state.armor ? { layer1: diamond1, layer2: diamond2 } : undefined,
+          rightHand: state.sword ? sword : undefined,
+          cape: state.cape ? cape : undefined,
+        }
+        showCode()
+      }
+      const diamond1 = armorLayer('#3fc8c8')
+      const diamond2 = armorLayer('#2d9b9b')
+
+      // The animations the viewer has, by name.
+      el.addEventListener('skinload', (e) => {
+        const i = e.detail
+        $('status').textContent = i.frames > 1 ? `${i.frames} frames at ${i.fps} fps` : 'Standing still'
+        if (i.missingBones.length) $('status').textContent += ` · this model has no ${i.missingBones.join(', ')}`
+      })
+      el.addEventListener('skinerror', (e) => ($('status').textContent = e.detail.message))
+      customElements.whenDefined('bedrock-skin-viewer').then(async () => {
+        const { motions, examples } = await el.viewer.animations()
+        const sel = $('animation')
+        const group = (label, names) => {
+          const g = document.createElement('optgroup')
+          g.label = label
+          for (const n of names) g.append(new Option(n, n, false, n === 'walk'))
+          sel.append(g)
+        }
+        sel.append(new Option('Standing still', ''))
+        group("Minecraft's own", motions)
+        group('Examples', examples)
+        group('Written in code', ['nod'])
+      })
+      // An animation written in code: a nod.
+      const nod = { duration: 1.2, pose: (t) => ({ head: { rotation: [Math.sin((t / 1.2) * Math.PI * 2) * 25, 0, 0] } }) }
+      $('animation').onchange = (e) => {
+        const v = e.target.value
+        if (v === 'nod') el.animation = nod
+        else {
+          el.animation = undefined
+          el.setAttribute('animation', v)
+        }
+        showCode()
+      }
+
+      $('pick').onclick = () => $('file').click()
+      const useFile = (f) => {
+        if (!f) return
+        state.texture = f
+        state.geometry = ''
+        apply()
+      }
+      $('file').onchange = (e) => useFile(e.target.files[0])
+      $('sample').onclick = () => {
+        state.texture = 'skin.png'
+        state.geometry = 'geometry.json'
+        apply()
+      }
+      const stage = $('stage')
+      stage.addEventListener('dragover', (e) => {
+        e.preventDefault()
+        stage.classList.add('dragging')
+      })
+      stage.addEventListener('dragleave', () => stage.classList.remove('dragging'))
+      stage.addEventListener('drop', (e) => {
+        e.preventDefault()
+        stage.classList.remove('dragging')
+        useFile(e.dataTransfer.files[0])
+      })
+      for (const r of document.querySelectorAll('input[name="model"]'))
+        r.onchange = () => {
+          state.model = r.value
+          apply()
+        }
+      for (const k of ['armor', 'sword', 'cape'])
+        $(k).onchange = (e) => {
+          state[k] = e.target.checked
+          apply()
+        }
+
+      $('speed').oninput = (e) => el.setAttribute('speed', e.target.value)
+      $('play').onclick = () => {
+        const paused = el.toggleAttribute('paused')
+        $('play').textContent = paused ? 'Play' : 'Pause'
+      }
+      for (const b of document.querySelectorAll('[data-view]'))
+        b.onclick = () => {
+          el.removeAttribute('auto-rotate')
+          $('spin').textContent = 'Spin'
+          el.viewer.setView(b.dataset.view, { duration: 450 })
+          showCode()
+        }
+      $('spin').onclick = () => {
+        const on = !el.hasAttribute('auto-rotate')
+        if (on) el.setAttribute('auto-rotate', '20')
+        else el.removeAttribute('auto-rotate')
+        $('spin').textContent = on ? 'Stop spinning' : 'Spin'
+        showCode()
+      }
+
+      const setBackground = () => {
+        const v = $('background').value
+        if (v === 'panorama') {
+          el.removeAttribute('background')
+          el.viewer.background = { panorama }
+        } else {
+          el.setAttribute('background', v)
+          if (!v) el.viewer.background = null
+        }
+        showCode()
+      }
+      $('background').onchange = setBackground
+      $('nametag').oninput = (e) => {
+        el.setAttribute('name-tag', e.target.value)
+        showCode()
+      }
+      $('snapshot').onclick = async () => {
+        const blob = await el.viewer.snapshot(1024)
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = 'skin.png'
+        a.click()
+      }
+
+      // The HTML for what is on screen.
+      function showCode() {
+        const attrs = []
+        const add = (k, v) => v !== null && v !== undefined && v !== false && attrs.push(v === true ? k : `${k}="${v}"`)
+        add('src', typeof state.texture === 'string' ? state.texture : 'your-skin.png')
+        if (state.geometry && typeof state.texture === 'string') add('geometry', state.geometry)
+        add('model', state.model || null)
+        const anim = $('animation').value
+        add('animation', anim && anim !== 'nod' ? anim : null)
+        add('auto-rotate', el.getAttribute('auto-rotate') || (el.hasAttribute('auto-rotate') ? true : null))
+        add('name-tag', $('nametag').value || null)
+        const bg = $('background').value
+        if (bg && bg !== 'panorama') add('background', bg)
+        if (bg === 'panorama') add('panorama', 'panorama.png')
+        let html = `<script src="https://cdn.jsdelivr.net/npm/bedrock-skin-viewer"><\/script>\n\n<bedrock-skin-viewer\n  ${attrs.join('\n  ')}\n></bedrock-skin-viewer>`
+        const extra = []
+        if (state.armor) extra.push("armor: { layer1: 'diamond_1.png', layer2: 'diamond_2.png' }")
+        if (state.sword) extra.push("rightHand: 'diamond_sword.png'")
+        if (state.cape) extra.push("cape: 'cape.png'")
+        if (extra.length) html += `\n\n<script>\n  document.querySelector('bedrock-skin-viewer').skin = {\n    ${extra.join(',\n    ')},\n  }\n<\/script>`
+        if (anim === 'nod') html += `\n\n<script>\n  // An animation written in code\n  document.querySelector('bedrock-skin-viewer').animation = {\n    duration: 1.2,\n    pose: (t) => ({ head: { rotation: [Math.sin(t / 1.2 * Math.PI * 2) * 25, 0, 0] } }),\n  }\n<\/script>`
+        $('code').textContent = html
+      }
+
+      customElements.whenDefined('bedrock-skin-viewer').then(() => {
+        setBackground()
+        el.setAttribute('name-tag', $('nametag').value)
+        showCode()
+      })
+    </script>
+  </body>
+</html>

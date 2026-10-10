@@ -11,7 +11,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { AnimationInfo } from './protocol'
-import type { AnimationInput, Camera, Controls, SkinInput, SkinViewerOptions } from './types'
+import type { AnimationInput, Background, Camera, Controls, NameTag, SkinInput, SkinViewerOptions } from './types'
 import { SkinViewer as Viewer, type ViewerState } from './viewer'
 
 export interface SkinViewerProps extends Omit<SkinViewerOptions, 'skin' | 'animation'> {
@@ -63,6 +63,8 @@ export const SkinViewer = forwardRef<Viewer | null, SkinViewerProps>(function Sk
       controls: p.controls,
       pixelRatio: p.pixelRatio,
       label: p.label,
+      background: p.background,
+      nameTag: p.nameTag,
     })
     const off = [
       v.on('load', (i) => latest.current.onLoad?.(i)),
@@ -117,6 +119,14 @@ export const SkinViewer = forwardRef<Viewer | null, SkinViewerProps>(function Sk
   useEffect(() => {
     viewer?.canvas.setAttribute('aria-label', props.label ?? 'Minecraft skin')
   }, [viewer, props.label])
+  const backgroundKey = JSON.stringify(props.background ?? null)
+  useEffect(() => {
+    if (viewer) viewer.background = (props.background ?? null) as Background | null
+  }, [viewer, backgroundKey])
+  const nameTagKey = JSON.stringify(props.nameTag ?? null)
+  useEffect(() => {
+    if (viewer) viewer.nameTag = (props.nameTag ?? null) as NameTag | null
+  }, [viewer, nameTagKey])
   const controlsKey = JSON.stringify(props.controls ?? true)
   useEffect(() => {
     viewer?.setControls((props.controls ?? true) as boolean | Partial<Controls>)
@@ -136,7 +146,7 @@ export const SkinViewer = forwardRef<Viewer | null, SkinViewerProps>(function Sk
         : null
 
   return (
-    <div ref={box} className={props.className} style={{ position: 'relative', width: 300, height: 300, ...props.style }}>
+    <div ref={box} className={props.className} style={{ position: 'relative', width: props.width ?? 300, height: props.height ?? 300, ...props.style }}>
       {overlay !== null && (
         <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>{overlay}</div>
       )}
@@ -146,4 +156,4 @@ export const SkinViewer = forwardRef<Viewer | null, SkinViewerProps>(function Sk
 
 export type { Viewer as SkinViewerInstance, ViewerState }
 export type { AnimationInfo } from './protocol'
-export type { AnimationInput, ArmorInput, Camera, Controls, HeldInput, ImageInput, JSONInput, Skin, SkinInput, SkinViewerOptions, View } from './types'
+export type { AnimationInput, ArmorInput, Background, BoneMove, Camera, Controls, CustomAnimation, HeldInput, ImageInput, JSONInput, NameTag, Skin, SkinInput, SkinViewerOptions, View } from './types'

@@ -101,8 +101,12 @@ let page: Backend | undefined
 
 // defaultWorker starts the package's own worker. It is written exactly this
 // way so bundlers (Vite, webpack, Parcel) see the worker and bundle it.
-function defaultWorker(): Worker {
-  return new Worker(new URL('./worker.js', import.meta.url), { type: 'module' })
+let defaultWorker = (): Worker => new Worker(new URL('./worker.js', import.meta.url), { type: 'module' })
+
+// useDefaultWorker replaces how the shared worker starts: the single-file
+// build starts one from the worker's code it carries.
+export function useDefaultWorker(make: () => Worker): void {
+  defaultWorker = make
 }
 
 export function backendFor(option: WorkerOption | undefined): Backend {

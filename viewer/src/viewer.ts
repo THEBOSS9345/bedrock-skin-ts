@@ -10,9 +10,10 @@
 // up with a drag however fast the hand.
 
 import { backendFor, type Backend } from './backend'
+import { Backdrop, Tag } from './decor'
 import type { AnimationInfo, WireCamera } from './protocol'
-import { keyOf, skinKey, wireAnimation, wireSkin } from './sources'
-import type { AnimationInput, Camera, Controls, SkinInput, SkinViewerOptions, View } from './types'
+import { isSkin, keyOf, skinKey, wireAnimation, wireSkin } from './sources'
+import type { AnimationInput, ArmorInput, Background, Camera, Controls, HeldInput, ImageInput, JSONInput, NameTag, Skin, SkinInput, SkinViewerOptions, View } from './types'
 
 // The camera's resting place: a little round to the model's left, a little
 // above.
@@ -79,9 +80,9 @@ export class SkinViewer {
   private readonly id = ++viewerIds
   private readonly backend: Backend
 
-  private skin: SkinInput | null = null
+  private skinValue: SkinInput | null = null
   private skinKeyValue = ''
-  private animation: AnimationInput = null
+  private animationValue: AnimationInput = null
   private animKeyValue = ''
   private fps: number
   private loadSeq = 0
@@ -106,6 +107,7 @@ export class SkinViewer {
   private last = 0
   private busy = false
   private drawn = ''
+  private measured = ''
   private size = 0
   private visible = true
   private camStamp = 0
@@ -116,6 +118,10 @@ export class SkinViewer {
   private destroyed = false
   private listeners = new Map<keyof SkinViewerEvents, Set<(value: never) => void>>()
   private cleanup: (() => void)[] = []
+  private readonly backdrop: Backdrop
+  private readonly tag: Tag
+  private backgroundValue: Background | null = null
+  private nameTagValue: NameTag | null = null
 
   // target is the element to show the viewer in (it fills it), or a canvas
   // to draw on.
@@ -146,12 +152,17 @@ export class SkinViewer {
     }
     this.canvas.setAttribute('role', 'img')
     this.canvas.setAttribute('aria-label', options.label ?? 'Minecraft skin')
+    this.backdrop = new Backdrop(this.canvas)
+    this.tag = new Tag(this.canvas, this.ownsCanvas ? this.host : (this.canvas.parentNode ?? this.host))
     this.setState('empty')
+    this.setSize(options.width, options.height)
     this.listen()
     this.applyControls()
+    this.background = options.background ?? null
+    this.nameTag = options.nameTag ?? null
 
-    if (options.animation !== undefined) this.animation = options.animation
-    this.animKeyValue = keyOf(wireAnimation(this.animation))
+    if (options.animation !== undefined) this.animationValue = options.animation
+    this.animKeyValue = this.animationKey(this.animationValue)
     if (options.skin) void this.setSkin(options.skin).catch(() => {})
     this.raf = requestAnimationFrame(this.tick)
   }
@@ -165,7 +176,7 @@ export class SkinViewer {
   async setSkin(skin: SkinInput | null): Promise<void> {
     const key = skinKey(skin)
     if (key === this.skinKeyValue) return this.pending ?? undefined
-    this.skin = skin
+    this.skinValue = skin
     this.skinKeyValue = key
     return this.reload()
   }
@@ -173,9 +184,9 @@ export class SkinViewer {
   // setAnimation sets what moves the model; see AnimationInput. The
   // animation starts from its beginning.
   async setAnimation(animation: AnimationInput): Promise<void> {
-    const key = keyOf(wireAnimation(animation))
+    const key = this.animationKey(animation)
     if (key === this.animKeyValue) return this.pending ?? undefined
-    this.animation = animation
+    this.animationValue = animation
     this.animKeyValue = key
     this.clock = 0
     return this.reload()
@@ -185,7 +196,7 @@ export class SkinViewer {
 
   private reload(): Promise<void> {
     const seq = ++this.loadSeq
-    if (!this.skin) {
+    if (!this.skinValue) {
       this.loadInfo = null
       this.loading = false
       this.clear()
@@ -197,9 +208,9 @@ export class SkinViewer {
     // What to load, and the keys that name it, taken together now: the
     // engine keeps what it loads under these keys, so a key must never travel
     // with another load's input.
-    const skin = this.skin
+    const skin = this.skinValue
     const skinKeyNow = this.skinKeyValue
-    const animation = this.animation
+    const animation = this.animationValue
     const animKeyNow = this.animKeyValue
     const p = (async () => {
       try {
@@ -210,7 +221,7 @@ export class SkinViewer {
           skinKey: skinKeyNow,
           skin: await wireSkin(skin),
           animKey: animKeyNow,
-          animation: wireAnimation(animation),
+          animation: wireAnimation(animation, this.fps),
           fps: this.fps,
         })
         if (seq !== this.loadSeq || this.destroyed || 'stale' in res) return
@@ -232,6 +243,87 @@ export class SkinViewer {
     })()
     this.pending = p
     return p
+  }
+
+  private animationKey(a: AnimationInput | undefined): string {
+    return keyOf(a ?? null)
+  }
+
+  // skin is the skin shown, as it was given; setting it is setSkin.
+  get skin(): SkinInput | null {
+    return this.skinValue
+  }
+  set skin(s: SkinInput | null) {
+    void this.setSkin(s).catch(() => {})
+  }
+
+  // animation is what moves the model; setting it is setAnimation.
+  get animation(): AnimationInput {
+    return this.animationValue
+  }
+  set animation(a: AnimationInput) {
+    void this.setAnimation(a).catch(() => {})
+  }
+
+  // The skin as a Skin, to change one part of it.
+  private get skinParts(): Skin {
+    const s = this.skinValue
+    return s === null ? {} : isSkin(s) ? s : { texture: s }
+  }
+
+  // loadSkin shows another skin image, keeping the cape, armor and held
+  // items; give a model ('slim', 'wide') or geometry to change those too.
+  loadSkin(texture: ImageInput, opts: { model?: string; geometry?: JSONInput | null } = {}): Promise<void> {
+    const next: Skin = { ...this.skinParts, texture }
+    if ('model' in opts) next.model = opts.model
+    if ('geometry' in opts) next.geometry = opts.geometry ?? undefined
+    return this.setSkin(next)
+  }
+
+  // loadCape puts a cape on, or takes it off with null.
+  loadCape(cape: ImageInput | null): Promise<void> {
+    return this.setSkin({ ...this.skinParts, cape: cape ?? undefined })
+  }
+
+  // loadArmor dresses the model in armor, or takes it off with null.
+  loadArmor(armor: ArmorInput | null): Promise<void> {
+    return this.setSkin({ ...this.skinParts, armor: armor ?? undefined })
+  }
+
+  // loadItem puts an item in a hand, or empties it with null.
+  loadItem(hand: 'right' | 'left', item: HeldInput | null): Promise<void> {
+    return this.setSkin({ ...this.skinParts, [hand === 'right' ? 'rightHand' : 'leftHand']: item ?? undefined })
+  }
+
+  // background is what is behind the model; see Background.
+  get background(): Background | null {
+    return this.backgroundValue
+  }
+  set background(bg: Background | null) {
+    this.backgroundValue = bg
+    this.backdrop.set(bg, this.cam.yaw)
+  }
+
+  // nameTag is the name above the head; see NameTag.
+  get nameTag(): NameTag | null {
+    return this.nameTagValue
+  }
+  set nameTag(t: NameTag | null) {
+    this.nameTagValue = t
+    this.tag.set(t)
+    // Measured with the next picture.
+    this.drawn = ''
+    this.measured = ''
+  }
+
+  // setSize fixes the viewer's size, in CSS pixels or any CSS length; left
+  // out, it fills the element it is in, sized by your CSS.
+  setSize(width?: number | string, height?: number | string): void {
+    const box = this.ownsCanvas ? this.host : this.canvas
+    const css = (v: number | string) => (typeof v === 'number' ? `${v}px` : v)
+    if (width !== undefined) box.style.width = css(width)
+    if (height !== undefined) box.style.height = css(height)
+    this.fit()
   }
 
   // info is what the loaded animation is: its frames, rate and the bones it
@@ -409,7 +501,9 @@ export class SkinViewer {
     this.destroyed = true
     cancelAnimationFrame(this.raf)
     for (const f of this.cleanup) f()
+    this.tag.remove()
     if (this.ownsCanvas) this.canvas.remove()
+    else this.backdrop.set(null, 0)
     this.host.removeAttribute('data-state')
     void this.backend.ask({ op: 'drop', viewer: this.id }).catch(() => {})
   }
@@ -447,6 +541,7 @@ export class SkinViewer {
 
   private moved() {
     this.camStamp++
+    this.backdrop.turn(this.cam.yaw)
     this.emit('camera', this.camera)
   }
 
@@ -503,7 +598,10 @@ export class SkinViewer {
     if (want === this.drawn) return
     this.busy = true
     const seq = this.loadSeq
-    this.backend.ask({ op: 'draw', viewer: this.id, i, size: this.size, camera: this.wireCamera() }).then(
+    // The name tag's place changes only with the camera and the size.
+    const view = `${this.skinKeyValue}|${this.animKeyValue}|${this.camStamp}|${this.size}`
+    const measure = this.tag.on && view !== this.measured
+    this.backend.ask({ op: 'draw', viewer: this.id, i, size: this.size, camera: this.wireCamera(), measure }).then(
       (res) => {
         this.busy = false
         if (seq !== this.loadSeq || this.destroyed || !('data' in res)) return
@@ -511,6 +609,10 @@ export class SkinViewer {
         if (this.canvas.width !== res.width) this.canvas.width = res.width
         if (this.canvas.height !== res.height) this.canvas.height = res.height
         this.canvas.getContext('2d')!.putImageData(new ImageData(res.data as Uint8ClampedArray<ArrayBuffer>, res.width, res.height), 0, 0)
+        if (measure) {
+          this.measured = view
+          this.tag.place(res.top)
+        }
         this.emit('frame', { index: i })
       },
       () => {

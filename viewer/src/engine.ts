@@ -4,6 +4,7 @@
 // start; handle() is the whole of it.
 
 import {
+  bonePose,
   decodeImage,
   defaultGeometry,
   encodePNG,
@@ -25,7 +26,7 @@ import {
   type RenderOptions,
   type RgbaImage,
 } from 'bedrock-skin'
-import type { AnimationInfo, Request, Response, WireAnimation, WireHeld, WireImage, WireJSON, WireSkin } from './protocol'
+import type { AnimationInfo, Request, Response, WireAnimation, WireHeld, WireImage, WireJSON, WirePose, WireSkin } from './protocol'
 
 // lru is a map that forgets its least recently used entry past max.
 function lru<V>(max: number) {
@@ -192,7 +193,19 @@ const example = (name: string) => {
   return examples.get(name) ?? examples.get(`animation.player.${name}`)
 }
 
-async function loadAnimation(a: WireAnimation): Promise<{ animator: Animator; file: string[] }> {
+// posed is an animation written in code: its frames posed on the page, one
+// per frame at the rate it was prepared at.
+function posed(a: { poses: WirePose[]; duration: number }, fps: number): Animator {
+  const table = a.poses.map((frame) => new Pose(frame.map(([bone, m]) => [bone, bonePose({ rotation: m.rotation, position: m.position, scale: m.scale })])))
+  const n = Math.max(table.length, 1)
+  return {
+    duration: () => a.duration,
+    pose: (t) => table[((Math.round(t * fps) % n) + n) % n] ?? new Pose(),
+  }
+}
+
+async function loadAnimation(a: WireAnimation, fps: number): Promise<{ animator: Animator; file: string[] }> {
+  if (typeof a === 'object' && 'poses' in a) return { animator: posed(a, fps), file: [] }
   if (typeof a === 'string') {
     const name = a.trim()
     if (name === '' || name === 'none') return { animator: STILL, file: [] }
@@ -220,6 +233,23 @@ function cached<V>(cache: ReturnType<typeof lru<Promise<V>>>, key: string, load:
   return p
 }
 
+// topOf finds the topmost row with anything drawn, and the middle of what
+// is drawn there: where a name tag goes, above the head.
+function topOf(data: Uint8ClampedArray, w: number, h: number): { x: number; y: number } | undefined {
+  for (let y = 0; y < h; y++) {
+    let x0 = -1
+    let x1 = -1
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] !== 0) {
+        if (x0 < 0) x0 = x
+        x1 = x
+      }
+    }
+    if (x0 >= 0) return { x: (x0 + x1 + 1) / 2 / w, y: y / h }
+  }
+  return undefined
+}
+
 // ---- viewers ----
 
 interface State {
@@ -240,7 +270,7 @@ export async function handle(q: Request): Promise<{ res: Response; transfer?: Tr
         const st = viewers.get(q.viewer) ?? { seq: 0 }
         viewers.set(q.viewer, st)
         st.seq = Math.max(st.seq, q.seq)
-        const [opts, anim] = await Promise.all([cached(skins, q.skinKey, () => loadSkin(q.skin)), cached(animations, typeof q.animation === 'string' ? `name:${q.animation}` : `file:${q.animKey}`, () => loadAnimation(q.animation))])
+        const [opts, anim] = await Promise.all([cached(skins, q.skinKey, () => loadSkin(q.skin)), cached(animations, typeof q.animation === 'string' ? `name:${q.animation}` : `other:${q.animKey}|${q.fps}`, () => loadAnimation(q.animation, q.fps))])
         // A newer load was asked for meanwhile: this one is out of date.
         if (q.seq !== st.seq) return { res: { id: q.id, ok: true, stale: true } }
         const frames = prepareFrames({ ...opts, animation: anim.animator, fps: q.fps })
@@ -263,7 +293,12 @@ export async function handle(q: Request): Promise<{ res: Response; transfer?: Tr
           return { res: { id: q.id, ok: true, png }, transfer: [png.buffer] }
         }
         const data = img.data instanceof Uint8ClampedArray ? img.data : new Uint8ClampedArray(img.data)
-        return { res: { id: q.id, ok: true, width: img.width, height: img.height, data }, transfer: [data.buffer] }
+        // Measured on the first frame, so a tag stays put while the model
+        // moves under it, as the game's does.
+        const top = q.measure
+          ? topOf(q.i % frames.length === 0 ? data : (frames.draw(0, q.size, q.camera).data as Uint8ClampedArray), img.width, img.height)
+          : undefined
+        return { res: { id: q.id, ok: true, width: img.width, height: img.height, data, top }, transfer: [data.buffer] }
       }
       case 'list': {
         examples ??= exampleAnimations()

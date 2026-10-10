@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { armorSet, decodeImage, exampleAnimations, Motion, parseGeometry, Pose, prepareFrames, type RenderOptions } from 'bedrock-skin'
+import { armorSet, bonePose, decodeImage, exampleAnimations, Motion, parseGeometry, Pose, prepareFrames, type RenderOptions } from 'bedrock-skin'
+import { wireAnimation } from '../src/sources'
 import { describe, expect, it } from 'vitest'
 import { handle } from '../src/engine'
 import type { Request, Response, WireCamera } from '../src/protocol'
@@ -73,6 +74,20 @@ describe('the engine', () => {
     expect(wag).toMatchObject({ ok: true, info: { frames: 4, missingBones: ['tail'], fileAnimations: ['animation.tail.wag'] } })
     const crouch = await ask({ op: 'load', viewer: 3, seq: 3, skinKey: 'bench', skin: { texture }, animKey: 'crouch', animation: 'crouch', fps: 5 })
     expect(crouch).toMatchObject({ ok: true, info: { frames: 8 } })
+  })
+
+  it('draws an animation written in code as bedrock-skin poses it', async () => {
+    const bow = { duration: 1, pose: (t: number) => ({ body: { rotation: [t * 40, 0, 0] as [number, number, number] }, head: { position: [0, -t * 2, 0] as [number, number, number], scale: 1.1 } }) }
+    const animation = wireAnimation(bow, 8)
+    const load = await ask({ op: 'load', viewer: 6, seq: 1, skinKey: 'bench', skin: { texture }, animKey: 'bow', animation, fps: 8 })
+    expect(load).toMatchObject({ ok: true, info: { frames: 8 } })
+    const draw = await ask({ op: 'draw', viewer: 6, i: 5, size: 96, camera: cam })
+    const pose = (t: number) =>
+      new Pose([
+        ['body', bonePose({ rotation: [t * 40, 0, 0] })],
+        ['head', bonePose({ position: [0, -t * 2, 0], scale: [1.1, 1.1, 1.1] })],
+      ])
+    sameAsLibrary(draw, { texture: decodeImage(texture), animation: { duration: () => 1, pose }, fps: 8 }, 5, 96)
   })
 
   it('says what went wrong', async () => {

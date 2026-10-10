@@ -30,6 +30,11 @@ const ATTRIBUTES = [
   'paused',
   'speed',
   'label',
+  'background',
+  'panorama',
+  'name-tag',
+  'width',
+  'height',
 ] as const
 
 const STYLE = `
@@ -145,7 +150,10 @@ export class SkinViewerElement extends Base {
       playing: !this.hasAttribute('paused'),
       speed: num(a('speed')) ?? this.optionsValue.speed,
       label: a('label') ?? this.optionsValue.label,
+      background: this.backgroundAttr() ?? this.optionsValue.background,
+      nameTag: a('name-tag') ?? this.optionsValue.nameTag,
     })
+    this.sizeAttrs()
     // Events, as DOM events on the element: skinload, skinerror, cameramove.
     this.inner.on('load', (info) => this.dispatchEvent(new CustomEvent('skinload', { detail: info })))
     this.inner.on('error', (error) => this.dispatchEvent(new CustomEvent('skinerror', { detail: error })))
@@ -190,8 +198,35 @@ export class SkinViewerElement extends Base {
       case 'label':
         v.canvas.setAttribute('aria-label', value ?? 'Minecraft skin')
         break
+      case 'background':
+      case 'panorama':
+        v.background = this.backgroundAttr() ?? null
+        break
+      case 'name-tag':
+        v.nameTag = value
+        break
+      case 'width':
+      case 'height':
+        this.sizeAttrs()
+        break
       default:
         this.sync()
+    }
+  }
+
+  // backgroundAttr reads background (any CSS background) or panorama (a
+  // wide picture's URL, turning with the camera).
+  private backgroundAttr() {
+    const p = this.getAttribute('panorama')
+    if (p) return { panorama: p }
+    return this.getAttribute('background') ?? undefined
+  }
+
+  // sizeAttrs sizes the element from width and height: numbers are pixels.
+  private sizeAttrs() {
+    for (const k of ['width', 'height'] as const) {
+      const v = this.getAttribute(k)
+      if (v !== null) this.style[k] = /^\d+(\.\d+)?$/.test(v) ? `${v}px` : v
     }
   }
 

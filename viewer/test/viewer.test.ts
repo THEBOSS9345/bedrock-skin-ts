@@ -79,3 +79,48 @@ describe('SkinViewer', () => {
     expect(el.hasAttribute('data-state')).toBe(false)
   })
 })
+
+describe('SkinViewer extras', () => {
+  it('plays an animation written in code', async () => {
+    const { v } = make({ fps: 10 })
+    const seen: number[] = []
+    const nod = { duration: 1.5, pose: (t: number) => (seen.push(t), { head: { rotation: [Math.sin(t * Math.PI) * 30, 0, 0] as [number, number, number] }, rightArm: { scale: 1.2 } }) }
+    await v.setSkin(texture)
+    await v.setAnimation(nod)
+    expect(v.info?.frames).toBe(15)
+    expect(seen).toHaveLength(15)
+    // The same object again changes nothing; another one with the same
+    // shape is another animation.
+    await v.setAnimation(nod)
+    expect(seen).toHaveLength(15)
+    await v.setAnimation({ ...nod, pose: () => ({}) })
+    expect(v.info?.frames).toBe(15)
+  })
+
+  it('changes one part of the skin at a time', async () => {
+    const { v } = make()
+    await v.setSkin({ texture, cape: texture })
+    await v.loadSkin(texture, { model: 'slim' })
+    expect(v.skin).toMatchObject({ texture, cape: texture, model: 'slim' })
+    await v.loadCape(null)
+    await v.loadItem('right', texture)
+    await v.loadArmor({ helmet: texture })
+    expect(v.skin).toMatchObject({ texture, model: 'slim', cape: undefined, rightHand: texture, armor: { helmet: texture } })
+    expect(v.state).toBe('ready')
+    v.animation = 'wave'
+    expect(v.animation).toBe('wave')
+  })
+
+  it('sets a background, a name tag and a size', () => {
+    const { v, el } = make({ background: '#123456', nameTag: { text: 'Steve', color: 'gold' }, width: 200, height: '300px' })
+    expect(v.canvas.style.background).toContain('#123456')
+    const tag = el.querySelector('.bsv-nametag') as HTMLElement
+    expect(tag.textContent).toBe('Steve')
+    expect(tag.style.color).toBe('gold')
+    expect([el.style.width, el.style.height]).toEqual(['200px', '300px'])
+    v.background = { image: 'sky.png' }
+    expect(v.canvas.style.background).toContain('sky.png')
+    v.nameTag = null
+    expect(el.querySelector('.bsv-nametag')).toBeNull()
+  })
+})
