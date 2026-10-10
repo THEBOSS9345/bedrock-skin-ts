@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { exampleAnimations } from '../src/animfile'
 import { armorSet, type Armor, type Held } from '../src/equipment'
 import { Motion, Pose, bonePose } from '../src/pose'
 import { ANIMATED_BODY_128, ANIMATED_FACE, render, renderItem, type ItemOptions, type RenderOptions } from '../src/render'
@@ -91,6 +92,18 @@ describe('render', () => {
       ['legacy-body', { texture: test, geometry: legacyGeo, size: 64 }],
       ['legacy-alpha', { texture: legacyTex, geometry: legacyGeo, identifier: 'geometry.alpha', size: 64 }],
       ['sneak-still', { texture: test, pose: Motion.sneak.pose(0.4), size: 96 }],
+      ['cape-sneak', { texture: test, cape: test, pose: Motion.sneak.pose(0.4), camera: cam(150, 15, 0, 0), size: 96 }],
+      [
+        'cape-swim',
+        {
+          texture: test,
+          cape: test,
+          armor: { chestplate: armorTexture(40) },
+          pose: exampleAnimations().get('animation.player.swim')!.pose(0.5),
+          camera: cam(200, 30, 0, 0),
+          size: 96,
+        },
+      ],
       ['scaled-pose', { texture: test, pose: scaled(), angle: 'iso', size: 96 }],
       ['tiny', { texture: test, view: 'avatar', size: 3 }],
       ['mesh-body', { texture: test, geometry: meshGeo, size: 96 }],

@@ -258,7 +258,7 @@ export function scene(opts: RenderOptions, pose: Pose): Scene {
     const capeGeo = capeGeometryFor(geos, geo)
     if (capeGeo) {
       const capePose = armorTextures(opts.armor ?? {})[1] ? chestplateCapePose(pose) : pose
-      const triangles = buildTriangles(capeGeo, (name) => name === 'cape', capePose)
+      const triangles = buildTriangles(capeOnSkeleton(capeGeo, geo), (name) => name === 'cape', capePose)
       if (triangles.length > 0) layers.push({ triangles, texture: opts.cape })
     }
   }
@@ -335,6 +335,42 @@ function capeGeometryFor(geos: Geometry[], body: Geometry): Geometry | undefined
     geos.find((g) => g.identifier !== body.identifier && (boneByName(g, 'cape')?.cubes.length ?? 0) > 0) ??
     findCape(defaultGeometry())
   )
+}
+
+// capeOnSkeleton is capeGeo with the bones skel has above it added, without
+// their cubes. The cape's chain stops at the waist, while the skin's goes on
+// up to a root that animations move - swimming, sitting, sneaking - so a cape
+// left on its own chain stayed where the skin had been.
+function capeOnSkeleton(capeGeo: Geometry, skel: Geometry): Geometry {
+  const have = new Set(capeGeo.bones.map((b) => b.name))
+  const skelBones = new Map<string, Bone>()
+  for (const b of skel.bones) if (!skelBones.has(b.name)) skelBones.set(b.name, b)
+  const bones = capeGeo.bones.slice()
+  for (let i = 0; i < capeGeo.bones.length; i++) {
+    const b = capeGeo.bones[i]!
+    if (b.parent !== '' && have.has(b.parent)) continue
+    const sb = skelBones.get(b.name)
+    if (!sb || sb.parent === '' || have.has(sb.parent)) continue
+    bones[i] = { ...b, parent: sb.parent }
+    for (let name = sb.parent; name !== '' && !have.has(name); ) {
+      const up = skelBones.get(name)
+      if (!up) break
+      have.add(name)
+      bones.push({
+        name: up.name,
+        parent: up.parent,
+        pivot: up.pivot,
+        rotation: up.rotation,
+        inflate: 0,
+        mirror: false,
+        cubes: [],
+        bindPoseRotation: [],
+        locators: new Map(),
+      })
+      name = up.parent
+    }
+  }
+  return { ...capeGeo, bones }
 }
 
 // framingFor is the field of view and margin that suit a view: avatar is a
