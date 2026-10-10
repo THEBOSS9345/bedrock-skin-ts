@@ -87,6 +87,8 @@
             <label><input id="sword" type="checkbox" /> sword</label>
             <label><input id="elytra" type="checkbox" /> elytra</label>
             <label><input id="cape" type="checkbox" /> cape</label>
+            <button id="pick-cape">Your own cape…</button>
+            <input id="cape-file" type="file" accept="image/png" hidden />
           </div>
         </fieldset>
         <fieldset>
@@ -160,7 +162,6 @@
       const armorSet = (m) => ({ layer1: `${PACK}models/armor/${m}_1.png`, layer2: `${PACK}models/armor/${m}_2.png` })
       const sword = `${PACK}items/diamond_sword.png`
       const elytra = `${PACK}models/armor/elytra.png`
-      const cape = 'cape.png'
 
       const paint = (w, h, draw) => {
         const c = document.createElement('canvas')
@@ -169,6 +170,16 @@
         draw(c.getContext('2d'))
         return c
       }
+      // A plain cape, drawn here, in the game's 64 by 32 layout; or the
+      // visitor's own.
+      let cape = paint(64, 32, (g) => {
+        g.fillStyle = '#9e1f27'
+        g.fillRect(0, 0, 22, 17)
+        g.fillStyle = '#7a161d'
+        g.fillRect(1, 1, 10, 16)
+        g.fillStyle = '#f2c94c'
+        g.fillRect(4, 5, 4, 4)
+      })
       const panorama = paint(1024, 256, (g) => {
         const sky = g.createLinearGradient(0, 0, 0, 256)
         sky.addColorStop(0, '#6aa8ff')
@@ -268,6 +279,15 @@
           state.model = r.value
           apply()
         }
+      $('pick-cape').onclick = () => $('cape-file').click()
+      $('cape-file').onchange = (e) => {
+        const f = e.target.files[0]
+        if (!f) return
+        cape = f
+        state.cape = true
+        $('cape').checked = true
+        apply()
+      }
       $('armor').onchange = (e) => {
         state.armor = e.target.value
         apply()
