@@ -65,7 +65,7 @@
     "check": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
-    "bedrock-skin": "^0.1.1"
+    "bedrock-skin": "^0.1.3"
   },
   "peerDependencies": {
     "react": ">=18"
