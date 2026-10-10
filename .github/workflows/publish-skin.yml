@@ -1,0 +1,52 @@
+name: Publish bedrock-skin
+
+# Publishes bedrock-skin to npm with trusted publishing (OIDC): no npm token
+# is stored in the repository.
+#
+# Release by pushing a v<version> tag (the version must equal the one in
+# package.json), or run this workflow by hand from the Actions tab.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # trusted publishing exchanges this token for a short-lived one
+
+concurrency:
+  group: publish-skin
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Trusted publishing needs Node 22.14+ and npm 11.5.1+; Node 24 bundles npm 11.
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # Typecheck, tests, the build and the export-shape check, exactly as CI does.
+      - run: npm run check
+
+      - name: Check the tag matches the version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag v$tag does not match package.json version $version"
+            exit 1
+          fi
+
+      # No NODE_AUTH_TOKEN: the npm CLI authenticates with OIDC. Provenance is
+      # generated automatically for this public repository.
+      - name: Publish
+        run: npm publish
