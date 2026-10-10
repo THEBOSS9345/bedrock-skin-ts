@@ -1,32 +1,10 @@
-import { StrictMode, useEffect, useMemo, useRef, useState } from 'react'
+import { StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { Skin, SkinViewerInstance } from 'bedrock-skin-viewer/react'
 import { SkinViewer } from 'bedrock-skin-viewer/react'
 
-// Stand-in armor and a sword, drawn here: Minecraft's own textures belong to
-// Mojang, so a real site points these at its resource pack's files.
-function armorTexture(tint: string): HTMLCanvasElement {
-  const c = document.createElement('canvas')
-  c.width = 64
-  c.height = 32
-  const g = c.getContext('2d')!
-  g.fillStyle = tint
-  g.fillRect(0, 0, 64, 32)
-  g.fillStyle = 'rgba(255,255,255,0.35)'
-  for (let x = 0; x < 64; x += 4) g.fillRect(x, 0, 1, 32)
-  return c
-}
-
-function swordTexture(): HTMLCanvasElement {
-  const c = document.createElement('canvas')
-  c.width = c.height = 16
-  const g = c.getContext('2d')!
-  for (let i = 0; i < 16; i++) {
-    g.fillStyle = i < 4 ? '#7a5230' : '#7ee0ff'
-    g.fillRect(i, 15 - i, 2, 2)
-  }
-  return c
-}
+// Minecraft's own armor and sword, from Mojang's sample resource pack.
+const PACK = 'https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/textures/'
 
 function App() {
   const viewer = useRef<SkinViewerInstance | null>(null)
@@ -44,16 +22,14 @@ function App() {
   const [log, setLog] = useState<string[]>([])
   const say = (s: string) => setLog((l) => [s, ...l].slice(0, 6))
 
-  const textures = useMemo(() => ({ diamond: armorTexture('#3fc8c8'), legs: armorTexture('#2d8f8f'), sword: swordTexture() }), [])
-
   // A new object each render, on purpose: the viewer only reloads when what
   // it says changes.
   const skin: Skin = {
     texture: upload ?? '/skin.png',
     geometry: custom && !upload ? '/geometry.json' : undefined,
     model: slim ? 'slim' : undefined,
-    armor: armor ? { layer1: textures.diamond, layer2: textures.legs } : undefined,
-    rightHand: sword ? textures.sword : undefined,
+    armor: armor ? { layer1: `${PACK}models/armor/diamond_1.png`, layer2: `${PACK}models/armor/diamond_2.png` } : undefined,
+    rightHand: sword ? `${PACK}items/diamond_sword.png` : undefined,
   }
 
   useEffect(() => {

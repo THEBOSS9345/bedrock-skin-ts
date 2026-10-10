@@ -233,21 +233,33 @@ function cached<V>(cache: ReturnType<typeof lru<Promise<V>>>, key: string, load:
   return p
 }
 
-// topOf finds the topmost row with anything drawn, and the middle of what
-// is drawn there: where a name tag goes, above the head.
+// topOf is where a name tag goes: just above the topmost drawn pixel, and
+// across, the middle of everything drawn in a band below that - the head,
+// not a strand of hair or a horn that happens to stick up highest.
 function topOf(data: Uint8ClampedArray, w: number, h: number): { x: number; y: number } | undefined {
-  for (let y = 0; y < h; y++) {
-    let x0 = -1
-    let x1 = -1
+  let top = -1
+  for (let y = 0; y < h && top < 0; y++) {
     for (let x = 0; x < w; x++) {
       if (data[(y * w + x) * 4 + 3] !== 0) {
-        if (x0 < 0) x0 = x
-        x1 = x
+        top = y
+        break
       }
     }
-    if (x0 >= 0) return { x: (x0 + x1 + 1) / 2 / w, y: y / h }
   }
-  return undefined
+  if (top < 0) return undefined
+  // The band: about a head's height at the default zoom.
+  const band = Math.max(2, Math.round(h * 0.08))
+  let sum = 0
+  let count = 0
+  for (let y = top; y < Math.min(h, top + band); y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] !== 0) {
+        sum += x + 0.5
+        count++
+      }
+    }
+  }
+  return { x: sum / count / w, y: top / h }
 }
 
 // ---- viewers ----

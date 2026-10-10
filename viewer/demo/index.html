@@ -74,8 +74,18 @@
             <label><input type="radio" name="model" value="slim" /> slim</label>
           </div>
           <div class="row">
-            <label><input id="armor" type="checkbox" /> armor</label>
+            <select id="armor" aria-label="Armor">
+              <option value="">No armor</option>
+              <option value="diamond">Diamond armor</option>
+              <option value="netherite">Netherite armor</option>
+              <option value="gold">Gold armor</option>
+              <option value="iron">Iron armor</option>
+              <option value="chain">Chainmail</option>
+            </select>
+          </div>
+          <div class="row">
             <label><input id="sword" type="checkbox" /> sword</label>
+            <label><input id="elytra" type="checkbox" /> elytra</label>
             <label><input id="cape" type="checkbox" /> cape</label>
           </div>
         </fieldset>
@@ -114,15 +124,21 @@
           <div class="row">
             <button id="snapshot">Save as PNG</button>
           </div>
-          <p class="note">Armor, the sword, the cape and the panorama here are drawn by this page: Minecraft's own textures belong to Mojang.</p>
+          <p class="note">The armor, sword and elytra are Minecraft's own, loaded from <a href="https://github.com/Mojang/bedrock-samples">Mojang's bedrock-samples</a>; the cape is drawn by this page, or try your own.</p>
         </fieldset>
       </aside>
     </main>
-    <script>
+    <script type="module">
       const el = document.getElementById('viewer')
       const $ = (id) => document.getElementById(id)
 
-      // Stand-in textures, drawn here.
+      // Minecraft's own textures, from Mojang's sample resource pack.
+      const PACK = 'https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/textures/'
+      const armorSet = (m) => ({ layer1: `${PACK}models/armor/${m}_1.png`, layer2: `${PACK}models/armor/${m}_2.png` })
+      const sword = `${PACK}items/diamond_sword.png`
+      const elytra = `${PACK}models/armor/elytra.png`
+      const cape = 'cape.png'
+
       const paint = (w, h, draw) => {
         const c = document.createElement('canvas')
         c.width = w
@@ -130,26 +146,6 @@
         draw(c.getContext('2d'))
         return c
       }
-      const armorLayer = (tint) =>
-        paint(64, 32, (g) => {
-          g.fillStyle = tint
-          g.fillRect(0, 0, 64, 32)
-          g.fillStyle = 'rgba(255,255,255,0.3)'
-          for (let x = 0; x < 64; x += 4) g.fillRect(x, 0, 1, 32)
-          g.clearRect(40, 26, 16, 6)
-        })
-      const sword = paint(16, 16, (g) => {
-        for (let i = 0; i < 16; i++) {
-          g.fillStyle = i < 4 ? '#7a5230' : '#8fe8ff'
-          g.fillRect(i, 15 - i, 2, 2)
-        }
-      })
-      const cape = paint(64, 32, (g) => {
-        g.fillStyle = '#b3262e'
-        g.fillRect(0, 0, 64, 32)
-        g.fillStyle = '#f2c94c'
-        g.fillRect(4, 4, 6, 6)
-      })
       const panorama = paint(1024, 256, (g) => {
         const sky = g.createLinearGradient(0, 0, 0, 256)
         sky.addColorStop(0, '#6aa8ff')
@@ -162,20 +158,18 @@
         for (let x = 32; x < 1024; x += 128) g.fillRect(x, 120, 24, 60)
       }).toDataURL()
 
-      const state = { texture: 'skin.png', geometry: 'geometry.json', model: '', armor: false, sword: false, cape: false }
+      const state = { texture: 'skin.png', geometry: 'geometry.json', model: '', armor: '', sword: false, elytra: false, cape: false }
       const apply = () => {
         el.skin = {
           texture: state.texture,
           geometry: state.geometry || undefined,
           model: state.model || undefined,
-          armor: state.armor ? { layer1: diamond1, layer2: diamond2 } : undefined,
+          armor: state.armor || state.elytra ? { ...(state.armor ? armorSet(state.armor) : {}), elytra: state.elytra ? elytra : undefined } : undefined,
           rightHand: state.sword ? sword : undefined,
           cape: state.cape ? cape : undefined,
         }
         showCode()
       }
-      const diamond1 = armorLayer('#3fc8c8')
-      const diamond2 = armorLayer('#2d9b9b')
 
       // The animations the viewer has, by name.
       el.addEventListener('skinload', (e) => {
@@ -239,7 +233,11 @@
           state.model = r.value
           apply()
         }
-      for (const k of ['armor', 'sword', 'cape'])
+      $('armor').onchange = (e) => {
+        state.armor = e.target.value
+        apply()
+      }
+      for (const k of ['sword', 'elytra', 'cape'])
         $(k).onchange = (e) => {
           state[k] = e.target.checked
           apply()
@@ -305,7 +303,10 @@
         if (bg === 'panorama') add('panorama', 'panorama.png')
         let html = `<script src="https://cdn.jsdelivr.net/npm/bedrock-skin-viewer"><\/script>\n\n<bedrock-skin-viewer\n  ${attrs.join('\n  ')}\n></bedrock-skin-viewer>`
         const extra = []
-        if (state.armor) extra.push("armor: { layer1: 'diamond_1.png', layer2: 'diamond_2.png' }")
+        const armorParts = []
+        if (state.armor) armorParts.push(`layer1: '${state.armor}_1.png', layer2: '${state.armor}_2.png'`)
+        if (state.elytra) armorParts.push("elytra: 'elytra.png'")
+        if (armorParts.length) extra.push(`armor: { ${armorParts.join(', ')} }`)
         if (state.sword) extra.push("rightHand: 'diamond_sword.png'")
         if (state.cape) extra.push("cape: 'cape.png'")
         if (extra.length) html += `\n\n<script>\n  document.querySelector('bedrock-skin-viewer').skin = {\n    ${extra.join(',\n    ')},\n  }\n<\/script>`

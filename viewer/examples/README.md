@@ -14,6 +14,7 @@ npm install
 npm run dev
 ```
 
-The skin is bedrock-skin's test skin. The armor and sword are drawn by the
-example itself: Minecraft's own textures belong to Mojang, so a real site
-points the viewer at its resource pack's files.
+The skin is bedrock-skin's test skin. The armor and sword are Minecraft's
+own, loaded from Mojang's sample resource pack
+(https://github.com/Mojang/bedrock-samples); a real site points the viewer at
+its resource pack's files.

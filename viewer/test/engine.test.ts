@@ -116,3 +116,15 @@ describe('the engine', () => {
     expect(decodeImage(png.png).width).toBe(64)
   })
 })
+
+describe('the name tag', () => {
+  it('centres on the head, not on whatever sticks up highest', async () => {
+    // The demo skin's hair sticks up on the left of its head.
+    await ask({ op: 'load', viewer: 7, seq: 1, skinKey: 'bench', skin: { texture, geometry: { bytes: geometry } }, animKey: 'still', animation: '', fps: 20 })
+    const front = { yaw: 0, pitch: 0, margin: 1.5 }
+    const res = (await ask({ op: 'draw', viewer: 7, i: 0, size: 256, camera: front, measure: true })) as { top?: { x: number; y: number } }
+    // Straight on, the head is in the middle of the picture.
+    expect(Math.abs(res.top!.x - 0.5)).toBeLessThan(0.02)
+    expect(res.top!.y).toBeGreaterThan(0)
+  })
+})
