@@ -165,7 +165,7 @@ new SkinViewer(el, {
 | `pauseWhenHidden` | `true` | Stops drawing while off screen or in a background tab. |
 | `worker` | `'auto'` | Where drawing happens; see [Workers and bundlers](#workers-and-bundlers). |
 | `background` | transparent | Any CSS background, `{ image }`, or `{ panorama }` that turns with the camera. |
-| `nameTag` | none | A name above the head: a string, or `{ text, color, background, font, size }`. |
+| `nameTag` | none | A name above the head, in Minecraft's own font on a translucent box as in game: a string, or `{ text, color, background, size }` (`font` for ordinary text instead). |
 | `width`, `height` | fill the element | A fixed size: pixels, or any CSS length. |
 | `label` | `"Minecraft skin"` | What screen readers say. |
 

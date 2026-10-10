@@ -125,19 +125,21 @@ export type AnimationInput = string | null | { file: JSONInput; name?: string } 
 export type Background = string | { image: string; size?: 'cover' | 'contain' } | { panorama: string }
 
 // NameTag is a name floating above the head, as in game: its text, or the
-// text and how it looks. It stays put while the model animates under it.
-// Style it further with CSS: .bsv-nametag, or ::part(nametag) on the
-// element.
+// text and how it looks. It is drawn in Minecraft's own font on a
+// translucent dark box, and stays put while the model animates under it.
+// Give a font to use ordinary text instead, styled further with CSS
+// (.bsv-nametag, or ::part(nametag) on the element).
 export type NameTag =
   | string
   | {
       text: string
-      // CSS colours and font. Defaults: white on translucent black, in the
-      // page's 'Minecraft' font if it has one, else monospace.
+      // CSS colours. Defaults: white on translucent black.
       color?: string
       background?: string
+      // A CSS font family, instead of Minecraft's.
       font?: string
-      // Text size in CSS pixels. Default 14.
+      // The text's height in CSS pixels. Default 16: 2 pixels to each of the
+      // font's.
       size?: number
     }
 

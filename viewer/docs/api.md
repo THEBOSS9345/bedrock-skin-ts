@@ -218,4 +218,4 @@ A CSS background string, `{ image: string; size?: 'cover' | 'contain' }`, or `{ 
 
 ### NameTag
 
-A string, or `{ text, color?, background?, font?, size? }`.
+A string, or `{ text, color?, background?, font?, size? }`. It is drawn in Minecraft's own font, pixel for pixel; `size` is the text's height in CSS pixels (default 16), and a `font` draws ordinary text in that font instead.

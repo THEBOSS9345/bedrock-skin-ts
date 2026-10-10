@@ -2,6 +2,7 @@
 // engine: the background, behind the canvas, and the name tag, over it. The
 // engine's pictures stay the model alone, pixel for pixel.
 
+import { drawText } from './pixelfont'
 import type { Background, NameTag } from './types'
 
 // Backdrop paints a background behind the model. A panorama is a wide
@@ -54,15 +55,17 @@ const TAG_STYLE: Partial<CSSStyleDeclaration> = {
   transform: 'translate(-50%, -100%)',
   pointerEvents: 'none',
   whiteSpace: 'nowrap',
-  padding: '1px 6px',
-  lineHeight: '1.3',
+  lineHeight: '0',
   zIndex: '1',
 }
 
-// Tag is the name above the head: an element over the canvas, so its text is
-// as sharp as the page's and CSS can style it.
+// Tag is the name above the head: an element over the canvas. By default it
+// is drawn in Minecraft's own font, pixel for pixel, on a translucent dark
+// box as in game; with a font of your own it is ordinary text, which CSS can
+// style.
 export class Tag {
   private el: HTMLDivElement | null = null
+  private drawn = 0
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -75,8 +78,7 @@ export class Tag {
 
   set(tag: NameTag | null | undefined): void {
     if (!tag || (typeof tag === 'object' && !tag.text)) {
-      this.el?.remove()
-      this.el = null
+      this.remove()
       return
     }
     const t = typeof tag === 'string' ? { text: tag } : tag
@@ -93,11 +95,28 @@ export class Tag {
       if (host && getComputedStyle(host).position === 'static') host.style.position = 'relative'
       this.parent.appendChild(this.el)
     }
-    this.el.textContent = t.text
-    Object.assign(this.el.style, {
-      color: t.color ?? '#fff',
-      background: t.background ?? 'rgba(0, 0, 0, 0.35)',
-      font: `${t.size ?? 14}px ${t.font ?? "Minecraft, ui-monospace, monospace"}`,
+    const el = this.el
+    const color = t.color ?? '#fff'
+    const background = t.background ?? 'rgba(0, 0, 0, 0.35)'
+    // The text's height in CSS pixels: 8 font pixels at 2 each by default.
+    const size = t.size ?? 16
+    const seq = ++this.drawn
+    if (t.font) {
+      el.replaceChildren(t.text)
+      Object.assign(el.style, { color, background, font: `${size}px ${t.font}`, padding: '1px 6px', lineHeight: '1.3' })
+      return
+    }
+    Object.assign(el.style, { color: '', background: '', font: '', padding: '0', lineHeight: '0' })
+    const c = document.createElement('canvas')
+    // Whole device pixels per font pixel, so every glyph pixel is sharp.
+    const dpr = typeof devicePixelRatio === 'number' ? devicePixelRatio : 1
+    const scale = Math.max(1, Math.round((size / 8) * dpr))
+    void drawText(c, t.text, scale, color, background).then(() => {
+      if (seq !== this.drawn || this.el !== el) return
+      c.style.width = `${c.width / dpr}px`
+      c.style.height = `${c.height / dpr}px`
+      c.style.display = 'block'
+      el.replaceChildren(c)
     })
   }
 

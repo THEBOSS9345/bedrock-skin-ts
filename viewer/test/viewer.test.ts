@@ -112,7 +112,7 @@ describe('SkinViewer extras', () => {
   })
 
   it('sets a background, a name tag and a size', () => {
-    const { v, el } = make({ background: '#123456', nameTag: { text: 'Steve', color: 'gold' }, width: 200, height: '300px' })
+    const { v, el } = make({ background: '#123456', nameTag: { text: 'Steve', color: 'gold', font: 'serif' }, width: 200, height: '300px' })
     expect(v.canvas.style.background).toContain('#123456')
     const tag = el.querySelector('.bsv-nametag') as HTMLElement
     expect(tag.textContent).toBe('Steve')
