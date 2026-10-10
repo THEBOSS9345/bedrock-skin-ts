@@ -159,13 +159,13 @@ new SkinViewer(el, {
 | `fov` | `35` | Field of view, in degrees. |
 | `autoRotate` | `false` | `true`, or degrees a second (negative turns the other way). |
 | `controls` | all on | `false`, or the controls to change. |
-| `fps` | `20` | The frame rate animations are prepared at. |
+| `fps` | `20` | Frames a second in animations, 1 to 60: more is smoother. Changeable while it runs. |
 | `pixelRatio` | the screen's, up to 2 | Pixels drawn per CSS pixel. |
 | `maxResolution` | `1024` | The largest picture drawn, in pixels square. |
 | `pauseWhenHidden` | `true` | Stops drawing while off screen or in a background tab. |
 | `worker` | `'auto'` | Where drawing happens; see [Workers and bundlers](#workers-and-bundlers). |
 | `background` | transparent | Any CSS background, `{ image }`, or `{ panorama }` that turns with the camera. |
-| `nameTag` | none | A name above the head, in Minecraft's own font on a translucent box as in game: a string, or `{ text, color, background, size }` (`font` for ordinary text instead). |
+| `nameTag` | none | A name above the head, in Minecraft's own font on a translucent box as in game: a string, or `{ text, color, background, size, gap }` (`font` for ordinary text instead). |
 | `width`, `height` | fill the element | A fixed size: pixels, or any CSS length. |
 | `label` | `"Minecraft skin"` | What screen readers say. |
 
@@ -236,8 +236,10 @@ vue({ template: { compilerOptions: { isCustomElement: (tag) => tag === 'bedrock-
 | `controls` | `false`, or which: `"rotate"`, `"rotate zoom keyboard"`. |
 | `paused` | Present to stop the animation. |
 | `speed` | Playback speed. |
+| `fps` | Frames a second in animations, 1 to 60. |
 | `background`, `panorama` | Any CSS background; or a panorama's URL, which turns with the camera. |
-| `name-tag` | A name above the head. |
+| `name-tag`, `name-tag-size`, `name-tag-gap` | A name above the head, its text's height, and its distance from the head, in pixels. |
+| `model-scale` | Resizes the whole figure. |
 | `width`, `height` | A fixed size; numbers are pixels. |
 | `label` | What screen readers say. |
 

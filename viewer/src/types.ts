@@ -141,6 +141,9 @@ export type NameTag =
       // The text's height in CSS pixels. Default 16: 2 pixels to each of the
       // font's.
       size?: number
+      // The space between the head and the tag, in CSS pixels. Default
+      // about half a block, at the model's size on screen.
+      gap?: number
     }
 
 // Controls are how a person moves the camera. Each can be turned off.
@@ -194,7 +197,8 @@ export interface SkinViewerOptions {
   playing?: boolean
   // How fast it plays: 1 is normal, 0.5 half speed. Default 1.
   speed?: number
-  // The frames per second animations are prepared at. Default 20.
+  // How many frames a second animations have, 1 to 60: more is smoother,
+  // fewer lighter to prepare. Default 20, as the game's own tick.
   fps?: number
   // Where the camera starts. Default yaw 25, pitch 10, zoom 1.
   camera?: Partial<Camera>

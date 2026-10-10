@@ -93,6 +93,16 @@
           <legend>Animation</legend>
           <select id="animation" aria-label="Animation"></select>
           <div class="row">
+            <label>Frames a second
+              <select id="fps" aria-label="Frames a second">
+                <option>10</option>
+                <option selected>20</option>
+                <option>30</option>
+                <option>60</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
             <label>Speed <input id="speed" type="range" min="0.25" max="2" step="0.25" value="1" /></label>
             <button id="play">Pause</button>
           </div>
@@ -117,6 +127,19 @@
             <option value="">Transparent</option>
           </select>
           <input id="nametag" type="text" placeholder="Name tag" value="Steve" aria-label="Name tag" />
+          <label>Name tag size <input id="tagsize" type="range" min="8" max="40" step="1" value="16" /></label>
+          <label>Name tag height <input id="taggap" type="range" min="0" max="60" step="1" value="" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>Sizes</legend>
+          <label>Whole model <input class="size" data-part="model" type="range" min="0.4" max="1.6" step="0.05" value="1" /></label>
+          <label>Head <input class="size" data-part="head" type="range" min="0" max="2.5" step="0.05" value="1" /></label>
+          <label>Body <input class="size" data-part="body" type="range" min="0" max="2" step="0.05" value="1" /></label>
+          <label>Arms <input class="size" data-part="arms" type="range" min="0" max="2" step="0.05" value="1" /></label>
+          <label>Legs <input class="size" data-part="legs" type="range" min="0" max="2" step="0.05" value="1" /></label>
+          <label>Sword <input class="size" data-part="sword" type="range" min="0.3" max="3" step="0.05" value="1" /></label>
+          <div class="row"><button id="sizes-reset">Reset sizes</button></div>
+          <p class="note">Armor and the sword grow and shrink with the part they are on.</p>
         </fieldset>
         <fieldset>
           <legend>This viewer, in HTML</legend>
@@ -159,13 +182,25 @@
       }).toDataURL()
 
       const state = { texture: 'skin.png', geometry: 'geometry.json', model: '', armor: '', sword: false, elytra: false, cape: false }
+      const sizes = { model: 1, head: 1, body: 1, arms: 1, legs: 1, sword: 1 }
+      // The parts a size slider moves, by the bones of the standard body
+      // (persona models name them in lower case; the viewer matches either).
+      const scaleOf = () => {
+        const parts = {}
+        if (sizes.head !== 1) parts.head = sizes.head
+        if (sizes.body !== 1) parts.body = sizes.body
+        if (sizes.arms !== 1) parts.rightArm = parts.leftArm = sizes.arms
+        if (sizes.legs !== 1) parts.rightLeg = parts.leftLeg = sizes.legs
+        return Object.keys(parts).length || sizes.model !== 1 ? { model: sizes.model !== 1 ? sizes.model : undefined, parts } : undefined
+      }
       const apply = () => {
         el.skin = {
           texture: state.texture,
           geometry: state.geometry || undefined,
           model: state.model || undefined,
           armor: state.armor || state.elytra ? { ...(state.armor ? armorSet(state.armor) : {}), elytra: state.elytra ? elytra : undefined } : undefined,
-          rightHand: state.sword ? sword : undefined,
+          rightHand: state.sword ? { item: sword, adjust: sizes.sword !== 1 ? { scale: sizes.sword } : undefined } : undefined,
+          scale: scaleOf(),
           cape: state.cape ? cape : undefined,
         }
         showCode()
@@ -244,6 +279,10 @@
         }
 
       $('speed').oninput = (e) => el.setAttribute('speed', e.target.value)
+      $('fps').onchange = (e) => {
+        el.setAttribute('fps', e.target.value)
+        showCode()
+      }
       $('play').onclick = () => {
         const paused = el.toggleAttribute('paused')
         $('play').textContent = paused ? 'Play' : 'Pause'
@@ -275,6 +314,26 @@
         showCode()
       }
       $('background').onchange = setBackground
+      for (const r of document.querySelectorAll('.size'))
+        r.oninput = () => {
+          sizes[r.dataset.part] = Number(r.value)
+          apply()
+        }
+      $('sizes-reset').onclick = () => {
+        for (const r of document.querySelectorAll('.size')) {
+          r.value = '1'
+          sizes[r.dataset.part] = 1
+        }
+        apply()
+      }
+      $('taggap').oninput = (e) => {
+        el.setAttribute('name-tag-gap', e.target.value)
+        showCode()
+      }
+      $('tagsize').oninput = (e) => {
+        el.setAttribute('name-tag-size', e.target.value)
+        showCode()
+      }
       $('nametag').oninput = (e) => {
         el.setAttribute('name-tag', e.target.value)
         showCode()
@@ -296,8 +355,12 @@
         add('model', state.model || null)
         const anim = $('animation').value
         add('animation', anim && anim !== 'nod' ? anim : null)
+        add('fps', $('fps').value !== '20' ? $('fps').value : null)
         add('auto-rotate', el.getAttribute('auto-rotate') || (el.hasAttribute('auto-rotate') ? true : null))
         add('name-tag', $('nametag').value || null)
+        add('name-tag-gap', $('nametag').value && el.hasAttribute('name-tag-gap') ? el.getAttribute('name-tag-gap') : null)
+        add('name-tag-size', $('nametag').value && $('tagsize').value !== '16' ? $('tagsize').value : null)
+        add('model-scale', sizes.model !== 1 ? sizes.model : null)
         const bg = $('background').value
         if (bg && bg !== 'panorama') add('background', bg)
         if (bg === 'panorama') add('panorama', 'panorama.png')
@@ -307,7 +370,9 @@
         if (state.armor) armorParts.push(`layer1: '${state.armor}_1.png', layer2: '${state.armor}_2.png'`)
         if (state.elytra) armorParts.push("elytra: 'elytra.png'")
         if (armorParts.length) extra.push(`armor: { ${armorParts.join(', ')} }`)
-        if (state.sword) extra.push("rightHand: 'diamond_sword.png'")
+        if (state.sword) extra.push(sizes.sword !== 1 ? `rightHand: { item: 'diamond_sword.png', adjust: { scale: ${sizes.sword} } }` : "rightHand: 'diamond_sword.png'")
+        const parts = scaleOf()?.parts ?? {}
+        if (Object.keys(parts).length) extra.push(`scale: { parts: ${JSON.stringify(parts).replace(/"/g, '')} }`)
         if (state.cape) extra.push("cape: 'cape.png'")
         if (extra.length) html += `\n\n<script>\n  document.querySelector('bedrock-skin-viewer').skin = {\n    ${extra.join(',\n    ')},\n  }\n<\/script>`
         if (anim === 'nod') html += `\n\n<script>\n  // An animation written in code\n  document.querySelector('bedrock-skin-viewer').animation = {\n    duration: 1.2,\n    pose: (t) => ({ head: { rotation: [Math.sin(t / 1.2 * Math.PI * 2) * 25, 0, 0] } }),\n  }\n<\/script>`

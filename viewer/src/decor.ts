@@ -66,6 +66,7 @@ const TAG_STYLE: Partial<CSSStyleDeclaration> = {
 export class Tag {
   private el: HTMLDivElement | null = null
   private drawn = 0
+  private gap: number | undefined
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -82,6 +83,7 @@ export class Tag {
       return
     }
     const t = typeof tag === 'string' ? { text: tag } : tag
+    this.gap = t.gap
     if (!this.el) {
       this.el = document.createElement('div')
       this.el.className = 'bsv-nametag'
@@ -134,7 +136,10 @@ export class Tag {
     const c = this.canvas
     const side = Math.min(c.clientWidth, c.clientHeight)
     const left = c.offsetLeft + (c.clientWidth - side) / 2 + at.x * side
-    const top = c.offsetTop + (c.clientHeight - side) / 2 + at.y * side - 4
+    // As in game, it floats clear of the head: by default about half a
+    // block above it, at the model's size on screen.
+    const gap = this.gap ?? side * 0.045
+    const top = c.offsetTop + (c.clientHeight - side) / 2 + at.y * side - gap
     el.hidden = top < el.offsetHeight / 2
     el.style.left = `${left}px`
     el.style.top = `${top}px`

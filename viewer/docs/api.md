@@ -22,7 +22,7 @@ const viewer = new SkinViewer(target: HTMLElement, options?: SkinViewerOptions)
 | `animation` | `AnimationInput` | still | See [`AnimationInput`](#animationinput). |
 | `playing` | `boolean` | `true` | |
 | `speed` | `number` | `1` | Playback speed. |
-| `fps` | `number` | `20` | The rate animations are prepared at. |
+| `fps` | `number` | `20` | Frames a second in animations, 1 to 60. Settable later as `viewer.fps`. |
 | `camera` | `Partial<Camera>` | `{ yaw: 25, pitch: 10, zoom: 1 }` | The starting camera, and `resetCamera`'s. |
 | `fov` | `number` | `35` | Field of view, in degrees. |
 | `autoRotate` | `boolean \| number` | `false` | `true` is 30 degrees a second. |
@@ -59,6 +59,7 @@ const viewer = new SkinViewer(target: HTMLElement, options?: SkinViewerOptions)
 | --- | --- |
 | `play()`, `pause()`, `playing` | |
 | `speed` | 1 is normal. |
+| `fps` | Frames a second, 1 to 60; setting it prepares the animation again. |
 | `time` | Seconds into the animation; settable. |
 
 ### Camera
@@ -120,9 +121,13 @@ import 'bedrock-skin-viewer/element'   // or the single-file script
 | `controls` | `false`, or which: `rotate`, `pitch`, `zoom`, `keyboard`, `no-inertia`. |
 | `paused` | Present to stop the animation. |
 | `speed` | |
+| `fps` | Frames a second, 1 to 60. |
 | `background` | Any CSS background. |
 | `panorama` | A panorama's URL; it turns with the camera. |
 | `name-tag` | A name above the head. |
+| `name-tag-size` | The name's height in CSS pixels (default 16). |
+| `name-tag-gap` | Pixels between the head and the name (default about half a block). |
+| `model-scale` | Resizes the whole figure (1 is normal). |
 | `width`, `height` | Numbers are pixels. |
 | `label` | For screen readers. |
 
@@ -218,4 +223,4 @@ A CSS background string, `{ image: string; size?: 'cover' | 'contain' }`, or `{ 
 
 ### NameTag
 
-A string, or `{ text, color?, background?, font?, size? }`. It is drawn in Minecraft's own font, pixel for pixel; `size` is the text's height in CSS pixels (default 16), and a `font` draws ordinary text in that font instead.
+A string, or `{ text, color?, background?, font?, size?, gap? }`. It is drawn in Minecraft's own font, pixel for pixel; `size` is the text's height in CSS pixels (default 16), and a `font` draws ordinary text in that font instead.

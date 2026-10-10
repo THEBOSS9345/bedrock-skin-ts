@@ -84,7 +84,7 @@ export class SkinViewer {
   private skinKeyValue = ''
   private animationValue: AnimationInput = null
   private animKeyValue = ''
-  private fps: number
+  private fpsValue: number
   private loadSeq = 0
   private loading = false
   private loadInfo: AnimationInfo | null = null
@@ -127,7 +127,7 @@ export class SkinViewer {
   // to draw on.
   constructor(target: HTMLElement, options: SkinViewerOptions = {}) {
     this.backend = backendFor(options.worker)
-    this.fps = options.fps ?? 20
+    this.fpsValue = fpsFrom(options.fps)
     this.home = { ...HOME, ...options.camera }
     this.cam = { ...this.home }
     this.fovValue = options.fov
@@ -221,8 +221,8 @@ export class SkinViewer {
           skinKey: skinKeyNow,
           skin: await wireSkin(skin),
           animKey: animKeyNow,
-          animation: wireAnimation(animation, this.fps),
-          fps: this.fps,
+          animation: wireAnimation(animation, this.fpsValue),
+          fps: this.fpsValue,
         })
         if (seq !== this.loadSeq || this.destroyed || 'stale' in res) return
         if (!('info' in res)) return
@@ -361,6 +361,19 @@ export class SkinViewer {
   }
 
   // speed is how fast the animation plays: 1 normal, 0.5 half speed.
+  // fps is how many frames a second the animation has: more is smoother,
+  // fewer is lighter to prepare. Setting it prepares the animation again,
+  // from where it was.
+  get fps(): number {
+    return this.fpsValue
+  }
+  set fps(v: number) {
+    const f = fpsFrom(v)
+    if (f === this.fpsValue) return
+    this.fpsValue = f
+    if (this.skinValue) void this.reload().catch(() => {})
+  }
+
   get speed(): number {
     return this.speedValue
   }
@@ -759,6 +772,11 @@ function controlsFrom(c: boolean | Partial<Controls> | undefined): Controls | nu
   if (c === false) return null
   if (c === true || c === undefined) return { ...DEFAULT_CONTROLS }
   return { ...DEFAULT_CONTROLS, ...c }
+}
+
+// fpsFrom is a frame rate kept to 1..60, 20 when not given.
+function fpsFrom(v: number | undefined): number {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.min(60, Math.max(1, Math.round(v))) : 20
 }
 
 function autoRotateFrom(v: boolean | number | undefined): number {

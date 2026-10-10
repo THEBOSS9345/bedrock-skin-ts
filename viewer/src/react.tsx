@@ -108,6 +108,9 @@ export const SkinViewer = forwardRef<Viewer | null, SkinViewerProps>(function Sk
     if (viewer) viewer.speed = props.speed ?? 1
   }, [viewer, props.speed])
   useEffect(() => {
+    if (viewer) viewer.fps = props.fps ?? 20
+  }, [viewer, props.fps])
+  useEffect(() => {
     if (viewer) viewer.autoRotate = props.autoRotate ?? false
   }, [viewer, props.autoRotate])
   useEffect(() => {

@@ -13,6 +13,7 @@ Short answers for common pages. Each uses the custom element or the `SkinViewer`
 - [Save or share a picture](#save-or-share-a-picture)
 - [Follow the camera](#follow-the-camera)
 - [Backgrounds](#backgrounds)
+- [Sizes](#sizes)
 - [A loading state](#a-loading-state)
 
 ## Preview an upload
@@ -148,6 +149,26 @@ viewer.background = null                                        // transparent
 ```
 
 A panorama is a wide picture whose width is a full circle; it slides as the camera turns. Snapshots stay transparent: the background is the page's, not the picture's.
+
+## Sizes
+
+Everything has a size of its own:
+
+```js
+viewer.setSkin({
+  texture: 'skin.png',
+  scale: {
+    model: 0.8,                                   // the whole figure
+    parts: { head: 1.6, rightArm: 1.2, leftArm: 1.2, leftLeg: 0 },   // any bone; 0 hides it
+  },
+  rightHand: { item: 'diamond_sword.png', adjust: { scale: 1.5 } },  // a held item
+  armor: { layer1: 'diamond_1.png', layer2: 'diamond_2.png' },       // follows the parts it is on
+})
+viewer.nameTag = { text: 'Steve', size: 24 }      // the name's height, in pixels
+viewer.setCamera({ zoom: 1.5 })                   // how close the camera is
+```
+
+On the element: `model-scale="0.8"` and `name-tag-size="24"`; the rest through its `skin` property.
 
 ## A loading state
 

@@ -33,8 +33,12 @@ const ATTRIBUTES = [
   'background',
   'panorama',
   'name-tag',
+  'name-tag-size',
+  'name-tag-gap',
+  'model-scale',
   'width',
   'height',
+  'fps',
 ] as const
 
 const STYLE = `
@@ -149,9 +153,10 @@ export class SkinViewerElement extends Base {
       controls: this.hasAttribute('controls') ? controlsAttr(a('controls')) : this.optionsValue.controls,
       playing: !this.hasAttribute('paused'),
       speed: num(a('speed')) ?? this.optionsValue.speed,
+      fps: num(a('fps')) ?? this.optionsValue.fps,
       label: a('label') ?? this.optionsValue.label,
       background: this.backgroundAttr() ?? this.optionsValue.background,
-      nameTag: a('name-tag') ?? this.optionsValue.nameTag,
+      nameTag: this.tagAttr() ?? this.optionsValue.nameTag,
     })
     this.sizeAttrs()
     // Events, as DOM events on the element: skinload, skinerror, cameramove.
@@ -195,6 +200,9 @@ export class SkinViewerElement extends Base {
       case 'speed':
         v.speed = num(value) ?? 1
         break
+      case 'fps':
+        v.fps = num(value) ?? 20
+        break
       case 'label':
         v.canvas.setAttribute('aria-label', value ?? 'Minecraft skin')
         break
@@ -203,7 +211,9 @@ export class SkinViewerElement extends Base {
         v.background = this.backgroundAttr() ?? null
         break
       case 'name-tag':
-        v.nameTag = value
+      case 'name-tag-size':
+      case 'name-tag-gap':
+        v.nameTag = this.tagAttr() ?? null
         break
       case 'width':
       case 'height':
@@ -220,6 +230,16 @@ export class SkinViewerElement extends Base {
     const p = this.getAttribute('panorama')
     if (p) return { panorama: p }
     return this.getAttribute('background') ?? undefined
+  }
+
+  // tagAttr reads name-tag, sized by name-tag-size (the text's height in
+  // CSS pixels).
+  private tagAttr() {
+    const text = this.getAttribute('name-tag')
+    if (!text) return undefined
+    const size = num(this.getAttribute('name-tag-size'))
+    const gap = num(this.getAttribute('name-tag-gap'))
+    return size === undefined && gap === undefined ? text : { text, size, gap }
   }
 
   // sizeAttrs sizes the element from width and height: numbers are pixels.
@@ -241,6 +261,9 @@ export class SkinViewerElement extends Base {
     s.geometry ??= a('geometry')
     s.model ??= a('model')
     s.cape ??= a('cape')
+    // model-scale resizes the whole figure; the skin property's scale wins.
+    const scale = num(this.getAttribute('model-scale'))
+    if (scale !== undefined && !s.scale?.model) s.scale = { ...s.scale, model: scale }
     const anyTexture = s.texture !== undefined || s.hideSkin
     v.setSkin(anyTexture ? s : null).catch(() => {})
     const file = a('animation-file')

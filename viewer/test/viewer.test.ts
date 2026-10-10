@@ -124,3 +124,17 @@ describe('SkinViewer extras', () => {
     expect(el.querySelector('.bsv-nametag')).toBeNull()
   })
 })
+
+describe('frame rate', () => {
+  it('changes while the viewer runs', async () => {
+    const { v } = make({ fps: 10 })
+    await v.setSkin(texture)
+    await v.setAnimation('walk')
+    expect(v.info?.frames).toBe(10)
+    v.fps = 60
+    await new Promise((r) => v.on('load', r))
+    expect([v.fps, v.info?.frames, v.info?.fps]).toEqual([60, 60, 60])
+    v.fps = 500
+    expect(v.fps).toBe(60)
+  })
+})
