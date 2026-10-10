@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bedrock-skin-viewer, no framework</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; display: flex; gap: 24px; flex-wrap: wrap; }
+      bedrock-skin-viewer { width: 320px; height: 420px; border-radius: 12px; background: radial-gradient(circle at 50% 40%, #2b3240, #14171d); }
+      /* The viewer's state, for CSS. */
+      bedrock-skin-viewer[data-state="loading"] { opacity: 0.6; }
+      bedrock-skin-viewer[data-state="error"] { outline: 2px solid #e55; }
+      bedrock-skin-viewer::part(canvas) { image-rendering: auto; }
+    </style>
+    <script type="module">
+      import 'bedrock-skin-viewer/element'
+
+      const walker = document.querySelector('#walker')
+      walker.addEventListener('skinload', (e) => (document.querySelector('#info').textContent = `${e.detail.frames} frames`))
+      walker.addEventListener('skinerror', (e) => (document.querySelector('#info').textContent = `error: ${e.detail.message}`))
+      document.querySelector('#back').onclick = () => walker.viewer.setView('back', { duration: 400 })
+      document.querySelector('#armor').onclick = () => {
+        const c = document.createElement('canvas')
+        c.width = 64
+        c.height = 32
+        const g = c.getContext('2d')
+        g.fillStyle = '#d4af37'
+        g.fillRect(0, 0, 64, 32)
+        walker.skin = { armor: { helmet: c, boots: c } }
+      }
+    </script>
+  </head>
+  <body>
+    <bedrock-skin-viewer id="walker" src="/skin.png" geometry="/geometry.json" animation="walk" auto-rotate></bedrock-skin-viewer>
+    <bedrock-skin-viewer id="still" src="/skin.png" model="slim" yaw="-30" controls="rotate" label="A slim skin"></bedrock-skin-viewer>
+    <bedrock-skin-viewer id="broken" src="/nothing.png"></bedrock-skin-viewer>
+    <div>
+      <p id="info">loading…</p>
+      <button id="back">back view</button>
+      <button id="armor">gold helmet and boots</button>
+    </div>
+  </body>
+</html>

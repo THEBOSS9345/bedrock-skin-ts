@@ -25,6 +25,8 @@ import { renderPNG } from 'bedrock-skin'           // ESM, TypeScript, bundlers
 const { renderPNG } = require('bedrock-skin')      // CommonJS
 ```
 
+Want a 3D viewer people can drag and zoom, with no code of your own? [bedrock-skin-viewer](https://github.com/THEBOSS9345/bedrock-skin-ts/tree/main/viewer) is a ready-made one built on this package: a custom element for any framework, and a React component.
+
 ## Quick start
 
 ```ts

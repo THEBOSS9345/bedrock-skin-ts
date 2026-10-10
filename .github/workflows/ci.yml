@@ -24,6 +24,22 @@ jobs:
       # not the engine's.
       - run: npm run check
 
+  viewer:
+    # bedrock-skin-viewer, the 3D viewer, is its own package in viewer/.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: viewer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: viewer/package-lock.json
+      - run: npm ci
+      - run: npm run check
+
   parity:
     # The fixtures in testdata/parity must be what bedrock-skin-go writes.
     runs-on: ubuntu-latest

@@ -1,0 +1,17 @@
+{
+  "name": "bedrock-skin-viewer-vue-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "bedrock-skin-viewer": "^0.1.0",
+    "vue": "^3.5.43"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "vite": "^8.3.4"
+  }
+}
