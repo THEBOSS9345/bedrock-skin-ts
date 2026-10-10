@@ -1,6 +1,6 @@
 {
   "name": "bedrock-skin-viewer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A drop-in 3D viewer for Minecraft Bedrock skins: drag to turn, scroll to zoom, animations, armor and held items. Works with any framework, or none, and has a React component.",
   "license": "Unlicense",
   "keywords": [
