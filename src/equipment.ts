@@ -77,6 +77,17 @@ export function elytraPose(pose: Pose): Pose {
   ])
 }
 
+// CHESTPLATE_CAPE_OFFSET is how far back a cape hangs over a chestplate, in
+// model units. The chestplate's body is the body grown by 1.01 on every
+// side, so a cape left where it rests on the back is drawn inside it. Java
+// Edition moves the cape back by the same amount when a chestplate is worn.
+const CHESTPLATE_CAPE_OFFSET = 1.1
+
+// chestplateCapePose is pose with the cape moved back clear of a chestplate.
+export function chestplateCapePose(pose: Pose): Pose {
+  return pose.with([['cape', bonePose({ position: [0, 0, CHESTPLATE_CAPE_OFFSET] })]])
+}
+
 // Scale resizes the figure or any of its bones. Left out, it changes
 // nothing. A held item has its own scale, in ItemAdjust.
 export interface Scale {

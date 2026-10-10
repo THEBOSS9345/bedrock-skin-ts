@@ -7,6 +7,7 @@ import {
   armorGeometry,
   armorTextures,
   buildHeldItem,
+  chestplateCapePose,
   elytraPose,
   handSkeleton,
   hands,
@@ -256,7 +257,8 @@ export function scene(opts: RenderOptions, pose: Pose): Scene {
   if (opts.cape && capeVisibleIn(view, parts)) {
     const capeGeo = capeGeometryFor(geos, geo)
     if (capeGeo) {
-      const triangles = buildTriangles(capeGeo, (name) => name === 'cape', pose)
+      const capePose = armorTextures(opts.armor ?? {})[1] ? chestplateCapePose(pose) : pose
+      const triangles = buildTriangles(capeGeo, (name) => name === 'cape', capePose)
       if (triangles.length > 0) layers.push({ triangles, texture: opts.cape })
     }
   }

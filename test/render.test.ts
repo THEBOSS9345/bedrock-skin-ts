@@ -180,3 +180,23 @@ describe('render', () => {
     expect(failures).toEqual([])
   })
 })
+
+// A chestplate reaches further back than a cape rests, so a cape left in place
+// was drawn inside it and hidden. Seen from behind, it must show as much over
+// a chestplate as without one.
+it('hangs a cape outside the chestplate', () => {
+  const cape = { width: 64, height: 32, data: new Uint8ClampedArray(64 * 32 * 4).map((_, i) => [230, 0, 0, 255][i % 4] ?? 0) }
+  const red = (img: { data: ArrayLike<number> }) => {
+    let n = 0
+    for (let i = 0; i < img.data.length; i += 4) {
+      const [r, g, b, a] = [0, 1, 2, 3].map((k) => img.data[i + k] ?? 0) as [number, number, number, number]
+      if (a > 0 && r > g + 100 && r > b + 100) n++
+    }
+    return n
+  }
+  const base: RenderOptions = { texture: testTexture(), cape, camera: { yaw: 180, pitch: 0 }, size: 96 }
+  const bare = red(render(base))
+  const armored = red(render({ ...base, armor: { chestplate: armorTexture(40) } }))
+  expect(bare).toBeGreaterThan(0)
+  expect(armored * 10).toBeGreaterThanOrEqual(bare * 9)
+})

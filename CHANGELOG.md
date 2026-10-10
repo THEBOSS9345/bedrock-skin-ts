@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Fix: a cape worn with a chestplate was drawn inside it and hidden, since the chestplate reaches further back than the cape rests. With a chestplate worn, the cape now hangs 1.1 units further back, outside the armor, as Java Edition moves it. Matches bedrock-skin-go v0.2.6.
+
 ## 0.1.1
 
 - The README's pictures and links work on npm.
